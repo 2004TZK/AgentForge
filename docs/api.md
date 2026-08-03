@@ -17,9 +17,9 @@
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
-| GET | /agent/page?page&size&name | 分页（名称模糊）→ PageResult\<AgentVO\> |
-| GET | /agent/{id} | 详情（含 systemPrompt/tools/mode）→ AgentDetailVO |
-| POST | /agent | 创建 `{name, description?, systemPrompt, modelName?, temperature?, tools[]?, mode?, workflowId?}` |
+| GET | /agent/page?page&size&name | 分页（名称模糊；**PRIVATE 仅创建者可见**，PUBLIC 所有人可见）→ PageResult\<AgentVO\> |
+| GET | /agent/{id} | 详情（含 systemPrompt/tools/mode/visibility/providerId）→ AgentDetailVO |
+| POST | /agent | 创建 `{name, description?, systemPrompt, modelName?, providerId?, temperature?, tools[]?, mode?, workflowId?, visibility?}` |
 | PUT | /agent/{id} | 更新（仅创建者） |
 | DELETE | /agent/{id} | 删除（仅创建者，逻辑删除） |
 | GET | /tools/meta | 工具元数据列表（名称/描述/参数/配置 Schema，前端按 Schema 渲染配置表单） |
@@ -29,6 +29,10 @@
 > 本人名下的工作流（`workflowId`），未绑定/绑定他人工作流分别返回 10001/20003。
 > M3 工具配置：`tools[].toolConfig` 为智能体级工具配置（如 github/web_search 的 api_key），
 > 由后端透传 AI 服务在工具执行时注入。
+> M4 可见性：`visibility` 取值 PUBLIC（所有登录用户可见可用）/ PRIVATE（默认，仅创建者）。
+> 列表过滤私有；详情与聊天对非创建者视为不存在（10003）。
+> M4 多模型：`providerId` 绑定模型 Provider（NULL=内置 Ollama）；聊天时后端将
+> Provider 的 {type, baseUrl, apiKey} 透传 AI 服务，按 Provider 调用对应模型。
 
 错误码：20003 非创建者操作、10003 智能体不存在、10001 参数错误。
 
@@ -93,6 +97,7 @@
 
 > M2 同名覆盖：同名文件重复上传会先清理旧文档（元数据 + 向量）再入库，避免旧分块残留。
 > 删除文档时 Qdrant 向量删除失败会返回 40004 并保留记录（保证集合一致，可重试删除）。
+> M4 权限：删除/重试仅文档所属 Agent 的创建者可操作（20003）；列表按 Agent 隔离。
 
 错误码：40001 类型不支持、40002 超 20MB、40003 空文件、40004 RAG 失败。
 
@@ -115,6 +120,20 @@
 > 执行语义：线性链（nextNode 指向，NULL=结束），唯一起点且无环；节点失败 → 运行 FAILED
 > 并携带节点错误日志（工具失败文本不中断链路）；节点日志含节点/类型/状态/输出/耗时。
 > 错误码：20003 非创建者、10003 不存在、10001 参数错误（非法节点类型/空节点/循环等）。
+
+## 5.5 模型 Provider /model/providers（需登录，M4）
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| GET | /model/providers | Provider 列表（系统内置 + 本人创建，启用优先）→ ProviderVO[] |
+| POST | /model/providers | 创建 `{name, providerType(ollama/openai), baseUrl, apiKey?, models[], enabled?}` |
+| PUT | /model/providers/{id} | 更新（仅创建者；内置不可改） |
+| DELETE | /model/providers/{id} | 删除（仅创建者；内置不可删） |
+
+> M4 多模型配置：`providerType=ollama` 走本地原生 /api/chat（think 可控），
+> `openai` 走 OpenAI 兼容 /v1/chat/completions（支持任意兼容服务如 DeepSeek）。
+> Agent 通过 `providerId` 绑定；聊天时后端透传 {type, baseUrl, apiKey} 给 AI 服务，
+> 未绑定（NULL）回落内置 Ollama。内置 Provider（creator_id=0）全局可见不可改删。
 
 ## 6. 内部 AI 服务（不经 Nginx 对外，需 X-Internal-Token）
 
