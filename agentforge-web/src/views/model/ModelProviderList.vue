@@ -16,6 +16,8 @@ const loading = ref(false)
 
 // 编辑态（null = 列表模式）
 const editing = ref<Provider | null>(null)
+/** 表单是否显示（新建/编辑共用；与 editing 解耦，修复列表非空时"新建"无反应） */
+const showForm = ref(false)
 const form = ref<ProviderPayload>({
   name: '',
   providerType: 'ollama',
@@ -40,12 +42,14 @@ async function load(): Promise<void> {
 
 function startCreate(): void {
   editing.value = null
+  showForm.value = true
   form.value = { name: '', providerType: 'ollama', baseUrl: '', apiKey: '', models: [], enabled: true }
   modelsText.value = ''
 }
 
 function startEdit(p: Provider): void {
   editing.value = p
+  showForm.value = true
   form.value = {
     name: p.name,
     providerType: p.providerType,
@@ -59,6 +63,7 @@ function startEdit(p: Provider): void {
 
 function cancelEdit(): void {
   editing.value = null
+  showForm.value = false
 }
 
 async function onSubmit(): Promise<void> {
@@ -81,6 +86,7 @@ async function onSubmit(): Promise<void> {
       notifySuccess('创建成功')
     }
     editing.value = null
+    showForm.value = false
     await load()
   } catch (e) {
     notifyError((e as Error).message)
@@ -129,7 +135,7 @@ onMounted(load)
 
       <div v-if="loading" class="muted">加载中…</div>
 
-      <div v-else-if="editing !== null || list.length === 0" class="card form provider-form">
+      <div v-else-if="showForm || list.length === 0" class="card form provider-form">
         <h3>{{ editing ? '编辑 Provider' : '新建 Provider' }}</h3>
         <div class="form-row">
           <div class="form-item">
