@@ -1,0 +1,45 @@
+# ===== 环境与密钥（敏感项不提交） =====
+.env
+*.env.local
+!*.env.example
+
+# ===== 本机工具/临时目录 =====
+.claude/
+.tmp/
+
+# ===== Java / Maven =====
+agentforge-backend/**/target/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+.idea/
+*.iml
+.vscode/
+
+# ===== Node / 前端 =====
+node_modules/
+agentforge-web/dist/
+agentforge-web/.vite/
+npm-debug.log*
+yarn-error.log*
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ===== Docker =====
+docker/nginx/nginx.conf.local
+
+# ===== 数据与日志 =====
+data/
+logs/
+*.log
+
+# ===== 操作系统 =====
+.DS_Store
+Thumbs.db

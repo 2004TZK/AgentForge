@@ -1,0 +1,70 @@
+# ============================================================
+# AgentForge 本地开发形态：仅启动中间件
+# 三端本地开发：
+#   后端    mvn -pl agentforge-start -am spring-boot:run（直连 localhost 中间件）
+#   AI 服务 uvicorn app.main:app --port 8000 --reload
+#   前端    npm run dev（Vite proxy /api → localhost:8080）
+# ============================================================
+
+name: agentforge-dev
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: agentforge-dev-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change-me-root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-agentforge}
+      MYSQL_USER: ${MYSQL_USER:-agentforge}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-change-me-app}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - agentforge-dev-mysql-data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    networks: [agentforge-dev-net]
+
+  redis:
+    image: redis:7-alpine
+    container_name: agentforge-dev-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - agentforge-dev-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [agentforge-dev-net]
+
+  qdrant:
+    image: qdrant/qdrant
+    container_name: agentforge-dev-qdrant
+    ports:
+      - "${QDRANT_PORT:-6333}:6333"
+    volumes:
+      - agentforge-dev-qdrant-data:/qdrant/storage
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/6333; echo -e 'GET /healthz HTTP/1.1\\r\\nhost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3; cat <&3 | grep -q '200 OK'"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    networks: [agentforge-dev-net]
+
+networks:
+  agentforge-dev-net:
+    name: agentforge-dev-net
+    driver: bridge
+
+volumes:
+  agentforge-dev-mysql-data:
+  agentforge-dev-redis-data:
+  agentforge-dev-qdrant-data:
