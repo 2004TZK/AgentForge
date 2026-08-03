@@ -77,6 +77,12 @@ docker compose up -d --build
 
 默认演示账号：`admin` / `admin123`（生产部署后请立即修改）。
 
+> **HTTPS**：启动时 `ssl-init` 容器自动生成自签证书（幂等，已存在则复用），
+> `https://localhost` 即可访问；生产环境请用正规 CA 证书替换
+> `docker/nginx/certs/` 下同名文件后重启 nginx。
+> **备份**：`./scripts/backup.sh` 一键导出 MySQL 全量 + Qdrant 快照（保留 7 天），
+> 恢复步骤见 `scripts/restore.md`。
+
 ### 升级已有部署
 
 ```bash
