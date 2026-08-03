@@ -76,6 +76,7 @@ cd agentforge-web && npm install && npm run dev
 - [数据库设计](docs/database.md)
 - [API 文档](docs/api.md)
 - [项目开发规划](docs/项目开发规划.md)
+- [用户使用指南](docs/user-guide.md)
 - [项目初始化设计方案 v0.2](docs/项目初始化设计方案-v0.2.md)
 
 ## 开发规范
