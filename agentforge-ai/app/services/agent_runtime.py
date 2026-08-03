@@ -2,6 +2,7 @@
 
 Phase 2（本版）：线性链路 —— 组装 Prompt（系统提示词 + 历史 + RAG 上下文）
 → LLM 回答；工具调用记录经 Planner 规则触发（calculator/github）。
+M1 新增：流式对话（/agent/chat/stream）复用同一前置链路，LLM 回答逐块输出。
 Phase 4：演进为 planner → RAG/工具分支 → LLM → 输出的完整循环。
 
 LangGraph 不可用时降级为直接执行节点函数（功能等价，保证服务可用）。
@@ -57,14 +58,11 @@ def _invoke(state: ChatState) -> ChatState:
         return _call_llm_node(state)
 
 
-def run_chat(*, agent_id: int, message: str, history: list[dict] | None = None,
-             system_prompt: str | None = None, model_name: str | None = None,
-             temperature: float | None = 0.7, tools: list[str] | None = None) -> dict:
-    """对话入口：返回 {answer, sources, toolCalls}。
+def prepare_chat(*, agent_id: int, message: str, history: list[dict] | None = None,
+                 system_prompt: str | None = None, tools: list[str] | None = None) -> tuple:
+    """对话前置链路：规则工具执行 + 可选 RAG 检索，组装最终消息序列。
 
-    1. 规则 Planner 决策工具 → 执行工具并注入结果
-    2. 可选 RAG 检索注入上下文（Qdrant 可用且该 Agent 有 collection 时）
-    3. LangGraph 状态图调用 LLM 生成回答
+    返回 (messages, tool_calls, sources)；同步与流式两条路径共用。
     """
     tools = tools or []
     tool_calls: list[str] = []
@@ -106,14 +104,24 @@ def run_chat(*, agent_id: int, message: str, history: list[dict] | None = None,
     if context_notes:
         user_content = f"{user_content}\n\n[附加上下文]\n" + "\n".join(context_notes)
     messages.append({"role": "user", "content": user_content})
+    return messages, tool_calls, sources
 
+
+def run_chat(*, agent_id: int, message: str, history: list[dict] | None = None,
+             system_prompt: str | None = None, model_name: str | None = None,
+             temperature: float | None = 0.7, tools: list[str] | None = None) -> dict:
+    """同步对话入口：返回 {answer, sources, toolCalls}。"""
+    messages, tool_calls, sources = prepare_chat(
+        agent_id=agent_id, message=message, history=history,
+        system_prompt=system_prompt, tools=tools,
+    )
     state: ChatState = {
         "agent_id": agent_id,
         "system_prompt": system_prompt or "",
         "messages": messages,
         "message": message,
         "temperature": temperature if temperature is not None else 0.7,
-        "tools": tools,
+        "tools": tools or [],
         "answer": "",
         "tool_calls": tool_calls,
         "sources": sources,
@@ -124,3 +132,26 @@ def run_chat(*, agent_id: int, message: str, history: list[dict] | None = None,
         "sources": result.get("sources", sources),
         "toolCalls": result.get("tool_calls", tool_calls),
     }
+
+
+async def stream_chat(*, agent_id: int, message: str, history: list[dict] | None = None,
+                      system_prompt: str | None = None, model_name: str | None = None,
+                      temperature: float | None = 0.7, tools: list[str] | None = None):
+    """流式对话入口：复用前置链路，逐块产出事件字典。
+
+    事件：{"type": "delta", "content": ...}（逐块）/
+         {"type": "done", "answer": 完整回答, "sources": [...], "toolCalls": [...]}（末尾）。
+
+    M1 流式路径直连 LLM 流式接口（状态图当前为线性链，功能等价）；
+    Phase 4 接入图节点时保持事件协议不变。
+    """
+    messages, tool_calls, sources = prepare_chat(
+        agent_id=agent_id, message=message, history=history,
+        system_prompt=system_prompt, tools=tools,
+    )
+    full = ""
+    async for delta in llm_client.chat_stream(
+            messages, temperature=temperature if temperature is not None else 0.7):
+        full += delta
+        yield {"type": "delta", "content": delta}
+    yield {"type": "done", "answer": full, "sources": sources, "toolCalls": tool_calls}

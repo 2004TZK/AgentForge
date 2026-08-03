@@ -1,0 +1,26 @@
+# ============================================================
+# 集成测试配置：H2 内存库替代 MySQL（本机无 Docker，Testcontainers 不可用）
+# 不依赖外部 Redis / AI 服务（连接均为懒建立，测试链路不触发）
+# ============================================================
+
+spring:
+  datasource:
+    driver-class-name: org.h2.Driver
+    # MODE=MySQL 兼容 MySQL 语法；DATABASE_TO_LOWER 统一标识符大小写
+    url: jdbc:h2:mem:agentforge_test;MODE=MySQL;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:sql/schema-h2.sql
+  data:
+    redis:
+      host: 127.0.0.1   # 仅占位：测试不访问 Redis
+
+agentforge:
+  jwt:
+    secret: test-only-jwt-secret-0123456789abcdef-0123456789
+  ai:
+    base-url: http://127.0.0.1:1   # 测试不调用 AI 服务（端口 1 快速拒绝连接）
+    internal-token: test-internal-token

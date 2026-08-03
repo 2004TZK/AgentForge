@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     llm_base_url: str = "https://api.deepseek.com"
     llm_model: str = "deepseek-chat"
     llm_timeout_seconds: int = 60
+    sse_ping_interval_seconds: int = 10      # SSE 无事件超过该间隔时发送保活注释帧
 
     # ---- Embedding（未配置模型时使用本地哈希 Mock 向量） ----
     embedding_model: str = ""

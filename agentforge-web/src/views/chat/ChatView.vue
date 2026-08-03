@@ -1,6 +1,6 @@
 <script setup lang="ts">
-/** 聊天页：选择智能体 → 加载历史 → 发送消息（Markdown 渲染回答） */
-import { onMounted, ref, watch } from 'vue'
+/** 聊天页：选择智能体 → 加载历史 → 发送消息（SSE 流式打字机 + 失败重试） */
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppLayout from '../../components/layout/AppLayout.vue'
 import MarkdownView from '../../components/common/MarkdownView.vue'
@@ -15,8 +15,9 @@ const chatStore = useChatStore()
 const agents = ref(agentStore.list)
 const selectedAgentId = ref<number | null>(null)
 const input = ref('')
-const sending = ref(false)
 const scrollRef = ref<HTMLElement | null>(null)
+
+const sending = computed(() => chatStore.sending)
 
 async function ensureAgents(): Promise<void> {
   if (!agents.value.length) {
@@ -43,15 +44,11 @@ async function onSend(): Promise<void> {
     notifyError('请先选择智能体')
     return
   }
-  sending.value = true
   input.value = ''
   try {
     await chatStore.send(content)
   } catch (e) {
     notifyError((e as Error).message)
-  } finally {
-    sending.value = false
-    scrollToBottom()
   }
 }
 
@@ -61,7 +58,14 @@ function scrollToBottom(): void {
   })
 }
 
-watch(() => chatStore.messages.length, scrollToBottom)
+// 消息长度与内容变化均触发滚动（流式增量更新内容时持续跟随底部）
+watch(
+  () => {
+    const last = chatStore.messages[chatStore.messages.length - 1]
+    return last?.content
+  },
+  scrollToBottom,
+)
 
 onMounted(async () => {
   await ensureAgents()
@@ -101,11 +105,16 @@ onMounted(async () => {
             class="message"
             :class="msg.role"
           >
-            <div class="bubble">
+            <div class="bubble" :class="{ 'bubble-error': msg.status === 'error' }">
               <MarkdownView v-if="msg.role === 'assistant'" :content="msg.content" />
               <template v-else>{{ msg.content }}</template>
+              <span v-if="msg.status === 'streaming'" class="cursor">▍</span>
               <div v-if="msg.role === 'assistant' && msg.sources?.length" class="sources">
                 来源：{{ msg.sources.join('、') }}
+              </div>
+              <div v-if="msg.status === 'error'" class="error-line">
+                <span class="error-text">{{ msg.error || '回答失败' }}</span>
+                <button class="btn btn-secondary btn-sm" @click="chatStore.retry()">重试</button>
               </div>
             </div>
           </div>
@@ -119,6 +128,7 @@ onMounted(async () => {
             placeholder="输入消息，Enter 发送，Shift+Enter 换行"
             @keydown.enter.exact.prevent="onSend"
           />
+          <button v-if="sending" class="btn btn-secondary" @click="chatStore.stop()">停止</button>
           <button class="btn" :disabled="sending" @click="onSend">
             {{ sending ? '思考中…' : '发送' }}
           </button>
@@ -220,10 +230,38 @@ onMounted(async () => {
   color: #fff;
 }
 
+.bubble-error {
+  border: 1px solid var(--color-danger);
+}
+
+/* 流式输入光标 */
+.cursor {
+  color: var(--color-primary);
+  animation: blink 1s step-start infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
 .sources {
   margin-top: 6px;
   font-size: 12px;
   color: var(--color-text-secondary);
+}
+
+.error-line {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.error-text {
+  font-size: 12px;
+  color: var(--color-danger);
 }
 
 .composer {

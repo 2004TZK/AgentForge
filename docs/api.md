@@ -29,10 +29,29 @@
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
-| POST | /chat | 发送消息 `{agentId, message}` → ChatVO `{answer, sources[], toolCalls[]}`（同步，Phase 3 起 SSE） |
+| POST | /chat | 发送消息 `{agentId, message}` → ChatVO `{answer, sources[], toolCalls[]}`（同步） |
+| POST | /chat/stream | 发送消息（SSE 流式回答，见下方事件协议） |
 | GET | /chat/history?agentId&page&size | 历史分页（倒序）→ PageResult\<ConversationVO\> |
 
-错误码：30001 AI 超时、30002 AI 不可用、30003 LLM 错误。
+### SSE 流式接口（POST /chat/stream）
+
+请求体与 `/chat` 一致 `{agentId, message}`；响应为 `text/event-stream`（`Cache-Control: no-cache`、`X-Accel-Buffering: no`，Nginx 已关闭缓冲）。事件以空行分隔，`data:` 行为 JSON：
+
+| 事件 type | 字段 | 说明 |
+|---|---|---|
+| delta | `content` | 回答增量（逐块输出，前端打字机渲染） |
+| done | `answer`、`sources[]`、`toolCalls[]` | 回答结束，携带完整数据（后端在此时落库） |
+| error | `code`、`message` | 失败（错误码同下表）；流结束但未收到 done/error 视为连接中断 |
+
+长时间无增量时服务端发送 `: keepalive` 注释帧保活；前端可用 `AbortController` 主动中断（停止按钮）。
+
+### 错误码
+
+| code | 含义 | 触发场景 |
+|---|---|---|
+| 30001 | AI 服务调用超时 | 连接/读取超时（默认 60s） |
+| 30002 | AI 服务不可用 | 服务未启动、连接拒绝、DNS 失败 |
+| 30003 | 模型错误 | 模型未拉取/不存在、鉴权失败、返回格式异常 |
 
 ## 4. 文件 /file（需登录）
 
@@ -51,9 +70,12 @@
 |---|---|---|
 | GET | /health | `{status, redis, qdrant}` |
 | POST | /agent/chat | `{agentId, message, history[], systemPrompt?, modelName?, temperature?, tools[]}` → `{answer, sources[], toolCalls[]}` |
+| POST | /agent/chat/stream | 同请求体；SSE 流式（事件协议同第 3 节，done 事件携带完整 answer 供落库） |
 | POST | /rag/ingest | `{agentId, fileName, filePath}` → `{status, chunkCount}` |
 | POST | /rag/search | `{agentId, query, topK}` → `{chunks[]}` |
 | DELETE | /rag/file?agentId&fileName | → `{deletedCount}` |
+
+AI 服务失败时返回结构化错误体 `{"code", "message"}`（错误码与第 3 节对齐，HTTP 502/504），后端 ai-gateway 据此映射用户侧错误码；流式接口的错误以 SSE `error` 事件下发。
 
 ## 6. 健康与文档
 
