@@ -1,6 +1,8 @@
 -- ============================================================
 -- M3 迁移：Workflow v1（工作流定义/节点/运行记录表）+ Agent 运行模式
--- 执行方式：mysql -h 127.0.0.1 -P 3307 -uroot -p < 本文件
+-- 执行方式：由 docker/mysql/upgrade/migrate.sh 自动执行（M4 起），
+--       或手动 mysql -h 127.0.0.1 -P 3307 -uroot -p < 本文件
+-- 说明：脚本幂等（列已存在时自动跳过，可安全重放）。
 -- ============================================================
 
 USE `agentforge`;
@@ -8,9 +10,12 @@ USE `agentforge`;
 -- ------------------------------------------------------------
 -- 智能体表新增运行模式与工作流绑定
 -- ------------------------------------------------------------
-ALTER TABLE `agent`
-  ADD COLUMN `mode` VARCHAR(20) NOT NULL DEFAULT 'chat' COMMENT '运行模式 chat/workflow' AFTER `temperature`,
-  ADD COLUMN `workflow_id` BIGINT UNSIGNED DEFAULT NULL COMMENT '绑定的工作流ID（mode=workflow 时生效）' AFTER `mode`;
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'agent' AND COLUMN_NAME = 'mode');
+SET @ddl = IF(@col_exists = 0,
+  'ALTER TABLE `agent` ADD COLUMN `mode` VARCHAR(20) NOT NULL DEFAULT ''chat'' COMMENT ''运行模式 chat/workflow'' AFTER `temperature`, ADD COLUMN `workflow_id` BIGINT UNSIGNED DEFAULT NULL COMMENT ''绑定的工作流ID（mode=workflow 时生效）'' AFTER `mode`',
+  'SELECT 1');
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- ------------------------------------------------------------
 -- 工作流定义表（元数据 + 描述）

@@ -134,6 +134,24 @@ services:
     networks: [agentforge-net]
     restart: unless-stopped
 
+  # ---------- 数据库迁移（一次性：按文件名顺序应用 upgrade/*.sql，幂等） ----------
+  migrate:
+    image: mysql:8.0
+    container_name: agentforge-migrate
+    entrypoint: ["/bin/sh", "/upgrade/migrate.sh"]
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_USER: ${MYSQL_USER:-agentforge}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-change-me-app}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-agentforge}
+    volumes:
+      - ./docker/mysql/upgrade:/upgrade:ro
+    depends_on:
+      mysql: { condition: service_healthy }
+    networks: [agentforge-net]
+    restart: "no"
+
   # ---------- 后端（仅内网，不暴露宿主机） ----------
   backend:
     build: ./agentforge-backend
@@ -156,6 +174,7 @@ services:
     depends_on:
       mysql: { condition: service_healthy }
       redis: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
     healthcheck:
       test: ["CMD", "bash", "-c", "cat < /dev/null > /dev/tcp/127.0.0.1/8080"]
       interval: 10s
