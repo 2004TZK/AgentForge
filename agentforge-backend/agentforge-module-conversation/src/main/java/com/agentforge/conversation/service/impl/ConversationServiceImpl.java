@@ -20,6 +20,8 @@ import com.agentforge.conversation.mapper.SessionMapper;
 import com.agentforge.conversation.service.ConversationService;
 import com.agentforge.conversation.vo.ChatVO;
 import com.agentforge.conversation.vo.ConversationVO;
+import com.agentforge.model.entity.ModelProvider;
+import com.agentforge.model.service.ModelProviderService;
 import com.agentforge.workflow.entity.Workflow;
 import com.agentforge.workflow.service.WorkflowService;
 import com.agentforge.workflow.vo.WorkflowRunVO;
@@ -77,11 +79,12 @@ public class ConversationServiceImpl implements ConversationService {
     private final AiServiceClient aiServiceClient;
     private final ObjectMapper objectMapper;
     private final WorkflowService workflowService;
+    private final ModelProviderService modelProviderService;
 
     @Override
     @Transactional
     public ChatVO chat(ChatRequest request, Long userId) {
-        Agent agent = loadAgentOrThrow(request.getAgentId());
+        Agent agent = loadAgentVisibleOrThrow(request.getAgentId(), userId);
 
         // M3 工作流模式：聊天消息作为工作流输入 {message}，答案取流程输出
         if ("workflow".equals(agent.getMode())) {
@@ -109,7 +112,7 @@ public class ConversationServiceImpl implements ConversationService {
     @Override
     public StreamingResponseBody chatStream(ChatRequest request, Long userId) {
         // 参数/权限校验在进入流式前完成；真正的 IO 透传发生在 WebMvc 异步线程
-        Agent agent = loadAgentOrThrow(request.getAgentId());
+        Agent agent = loadAgentVisibleOrThrow(request.getAgentId(), userId);
         if ("workflow".equals(agent.getMode())) {
             // M3 工作流模式：运行工作流后按块输出答案（打字机效果一致）
             return outputStream -> relayWorkflowStream(agent, request, userId, outputStream);
@@ -293,6 +296,15 @@ public class ConversationServiceImpl implements ConversationService {
         return agent;
     }
 
+    /** M4 可见性校验：PRIVATE 仅创建者可聊天，非创建者视为不存在 */
+    private Agent loadAgentVisibleOrThrow(Long agentId, Long userId) {
+        Agent agent = loadAgentOrThrow(agentId);
+        if (!"PUBLIC".equals(agent.getVisibility()) && !agent.getCreatorId().equals(userId)) {
+            throw new BusinessException(ResultCode.RESOURCE_NOT_FOUND, "智能体不存在");
+        }
+        return agent;
+    }
+
     /** 加载 Agent 绑定的工作流（校验归属：必须是创建者本人名下） */
     private Workflow loadAgentWorkflow(Agent agent) {
         return workflowService.getOwned(agent.getWorkflowId(), agent.getCreatorId());
@@ -338,12 +350,25 @@ public class ConversationServiceImpl implements ConversationService {
             }
         }
 
+        // 3. 模型 Provider（M4：Agent 绑定 provider 时透传 {type, baseUrl, apiKey} 给 AI 服务）
+        Map<String, Object> provider = null;
+        ModelProvider providerEntity = modelProviderService.getEnabledOrNull(agent.getProviderId());
+        if (providerEntity != null) {
+            provider = new HashMap<>();
+            provider.put("type", providerEntity.getProviderType());
+            provider.put("baseUrl", providerEntity.getBaseUrl());
+            if (providerEntity.getApiKey() != null && !providerEntity.getApiKey().isBlank()) {
+                provider.put("apiKey", providerEntity.getApiKey());
+            }
+        }
+
         return AiChatRequest.builder()
                 .agentId(agent.getId())
                 .message(request.getMessage())
                 .history(history)
                 .systemPrompt(agent.getSystemPrompt())
                 .modelName(agent.getModelName())
+                .provider(provider)
                 .temperature(agent.getTemperature())
                 .tools(tools)
                 .userId(userId)

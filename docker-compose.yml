@@ -1,10 +1,19 @@
 # ============================================================
 # AgentForge 一键启动（生产/演示形态）
-# 9 个服务：mysql redis qdrant ollama ollama-init ai backend web nginx
+# 11 个服务：mysql redis qdrant ollama ollama-init migrate ssl-init ai backend web nginx
 # 使用：cp .env.example .env && docker compose up -d --build
+# M4：migrate 自动应用数据库迁移；ssl-init 自动生成 HTTPS 证书；
+#     全局日志限额 + 各服务资源上限（见下方 x-logging / deploy）
 # ============================================================
 
 name: agentforge
+
+# M4 部署加固：全局日志策略（json-file 限额 + 轮转，防止日志占满磁盘）
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
 
 services:
   # ---------- 中间件 ----------
@@ -29,6 +38,11 @@ services:
       start_period: 30s
     networks: [agentforge-net]
     restart: unless-stopped
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 1g
 
   redis:
     image: redis:7-alpine
@@ -44,6 +58,11 @@ services:
       retries: 10
     networks: [agentforge-net]
     restart: unless-stopped
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 256m
 
   qdrant:
     image: qdrant/qdrant
@@ -60,6 +79,11 @@ services:
       start_period: 10s
     networks: [agentforge-net]
     restart: unless-stopped
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 1g
 
   # ---------- Ollama（本地模型：bge-m3 向量 + qwen2.5:7b 对话） ----------
   ollama:
@@ -81,6 +105,11 @@ services:
       start_period: 20s
     networks: [agentforge-net]
     restart: unless-stopped
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 4g
 
   # 一次性预拉模型（模型持久化在共享卷；拉取失败可换镜像源或 nomic-embed-text 兜底）
   ollama-init:
@@ -97,6 +126,11 @@ services:
       ollama: { condition: service_healthy }
     networks: [agentforge-net]
     restart: "no"
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 256m
 
   # ---------- AI 服务（仅内网，不暴露宿主机） ----------
   ai:
@@ -133,6 +167,34 @@ services:
       start_period: 15s
     networks: [agentforge-net]
     restart: unless-stopped
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 768m
+
+  # ---------- 数据库迁移（一次性：按文件名顺序应用 upgrade/*.sql，幂等） ----------
+  migrate:
+    image: mysql:8.0
+    container_name: agentforge-migrate
+    entrypoint: ["/bin/sh", "/upgrade/migrate.sh"]
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_USER: ${MYSQL_USER:-agentforge}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-change-me-app}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-agentforge}
+    volumes:
+      - ./docker/mysql/upgrade:/upgrade:ro
+    depends_on:
+      mysql: { condition: service_healthy }
+    networks: [agentforge-net]
+    restart: "no"
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 256m
 
   # ---------- 后端（仅内网，不暴露宿主机） ----------
   backend:
@@ -156,6 +218,7 @@ services:
     depends_on:
       mysql: { condition: service_healthy }
       redis: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
     healthcheck:
       test: ["CMD", "bash", "-c", "cat < /dev/null > /dev/tcp/127.0.0.1/8080"]
       interval: 10s
@@ -164,6 +227,11 @@ services:
       start_period: 30s
     networks: [agentforge-net]
     restart: unless-stopped
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 1536m
 
   # ---------- 前端静态资源 ----------
   web:
@@ -173,8 +241,32 @@ services:
       backend: { condition: service_healthy }
     networks: [agentforge-net]
     restart: unless-stopped
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 128m
 
-  # ---------- 边缘网关（唯一对外入口） ----------
+  # ---------- HTTPS 证书（一次性：无证书时自动生成自签，幂等） ----------
+  ssl-init:
+    image: alpine:3.20
+    container_name: agentforge-ssl-init
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["apk add --no-cache openssl >/dev/null 2>&1 && /ssl/gen-cert.sh"]
+    environment:
+      CERT_DIR: /certs
+    volumes:
+      - ./docker/nginx/certs:/certs
+      - ./docker/nginx/ssl:/ssl:ro
+    networks: [agentforge-net]
+    restart: "no"
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+
+  # ---------- 边缘网关（唯一对外入口，HTTP + HTTPS） ----------
   nginx:
     image: nginx:1.27-alpine
     container_name: agentforge-nginx
@@ -183,11 +275,18 @@ services:
       - "${NGINX_HTTPS_PORT:-443}:443"
     volumes:
       - ./docker/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./docker/nginx/certs:/etc/nginx/certs:ro
     depends_on:
+      ssl-init: { condition: service_completed_successfully }
       web: { condition: service_started }
       backend: { condition: service_started }
     networks: [agentforge-net]
     restart: unless-stopped
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 128m
 
 networks:
   agentforge-net:

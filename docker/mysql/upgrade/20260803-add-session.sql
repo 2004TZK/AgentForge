@@ -1,20 +1,28 @@
 -- ============================================================
 -- M2 多会话迁移（2026-08-03）：新增 session 表 + conversation.session_id
 -- 适用：已在 Phase 1-2 部署过的数据库（全新部署由 01-schema.sql 直接建表）
--- 执行：mysql -uagentforge -p agentforge < 20260803-add-session.sql
--- 说明：旧对话保留（session_id = NULL），前端按「默认会话」兼容展示；
---       删除会话不会删除其下消息（避免误删，历史数据保留）。
+-- 执行：由 docker/mysql/upgrade/migrate.sh 自动执行（M4 起），
+--       或手动 mysql -uagentforge -p agentforge < 本文件
+-- 说明：脚本幂等（列/索引已存在时自动跳过，可安全重放）。
 -- ============================================================
 
 USE `agentforge`;
 
 -- 1. conversation 增加会话归属列（可空，旧数据不受影响）
-ALTER TABLE `conversation`
-  ADD COLUMN `session_id` BIGINT UNSIGNED NULL COMMENT '会话ID（NULL=旧版数据）' AFTER `user_id`;
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'conversation' AND COLUMN_NAME = 'session_id');
+SET @ddl = IF(@col_exists = 0,
+  'ALTER TABLE `conversation` ADD COLUMN `session_id` BIGINT UNSIGNED NULL COMMENT ''会话ID（NULL=旧版数据）'' AFTER `user_id`',
+  'SELECT 1');
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- 2. 会话归属索引（历史按会话隔离查询）
-ALTER TABLE `conversation`
-  ADD KEY `idx_session_time` (`session_id`, `created_time`);
+SET @idx_exists = (SELECT COUNT(*) FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'conversation' AND INDEX_NAME = 'idx_session_time');
+SET @ddl = IF(@idx_exists = 0,
+  'ALTER TABLE `conversation` ADD KEY `idx_session_time` (`session_id`, `created_time`)',
+  'SELECT 1');
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- 3. 会话表
 CREATE TABLE IF NOT EXISTS `session` (

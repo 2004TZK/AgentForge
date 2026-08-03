@@ -27,6 +27,10 @@
             <groupId>com.agentforge</groupId>
             <artifactId>agentforge-module-ai-gateway</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.agentforge</groupId>
+            <artifactId>agentforge-module-model</artifactId>
+        </dependency>
         <!-- 读取 Agent 配置快照（systemPrompt/模型/工具）透传 AI 服务 -->
         <dependency>
             <groupId>com.agentforge</groupId>

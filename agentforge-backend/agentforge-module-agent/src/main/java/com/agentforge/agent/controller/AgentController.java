@@ -44,13 +44,13 @@ public class AgentController {
             @RequestParam(defaultValue = "1") @Min(value = 1, message = "page 需 >= 1") long page,
             @RequestParam(defaultValue = "10") @Min(value = 1) @Max(value = 100, message = "size 需 <= 100") long size,
             @RequestParam(required = false) String name) {
-        return Result.success(agentService.page(page, size, name));
+        return Result.success(agentService.page(page, size, name, UserContext.getUserId()));
     }
 
     @Operation(summary = "智能体详情")
     @GetMapping("/{id}")
     public Result<AgentDetailVO> detail(@PathVariable Long id) {
-        return Result.success(agentService.detail(id));
+        return Result.success(agentService.detail(id, UserContext.getUserId()));
     }
 
     @Operation(summary = "创建智能体")

@@ -29,6 +29,9 @@ public class AgentUpdateRequest {
 
     private String modelName = "deepseek-chat";
 
+    /** 模型 Provider ID（M4：NULL=内置 Ollama） */
+    private Long providerId;
+
     @DecimalMin(value = "0", message = "temperature 需在 0-1 之间")
     @DecimalMax(value = "1", message = "temperature 需在 0-1 之间")
     private BigDecimal temperature = new BigDecimal("0.70");
@@ -42,4 +45,7 @@ public class AgentUpdateRequest {
 
     /** 绑定的工作流 ID（mode=workflow 时生效） */
     private Long workflowId;
+
+    /** 可见性（M4）：PUBLIC / PRIVATE（仅创建者可见） */
+    private String visibility = "PRIVATE";
 }

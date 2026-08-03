@@ -34,6 +34,9 @@ public class AiChatRequest {
     /** 模型名 */
     private String modelName;
 
+    /** 模型 Provider（M4 多模型配置：{type, baseUrl, apiKey}；null=回落 AI 服务环境变量） */
+    private Map<String, Object> provider;
+
     /** 采样温度 */
     private BigDecimal temperature;
 

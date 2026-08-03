@@ -27,6 +27,8 @@ export interface AgentItem {
   mode: string
   /** M3：绑定的工作流 ID（mode=workflow 时生效） */
   workflowId: number | null
+  /** M4：可见性 PUBLIC 公开 / PRIVATE 私有（仅创建者可见） */
+  visibility: string
   creatorId: number
   createdTime: string
 }
@@ -47,4 +49,5 @@ export interface AgentPayload {
   tools: { toolName: string; toolConfig: Record<string, unknown>; enabled: boolean }[]
   mode?: string
   workflowId?: number | null
+  visibility?: string
 }

@@ -26,9 +26,11 @@ CREATE TABLE IF NOT EXISTS `agent` (
   `description`   VARCHAR(500),
   `system_prompt` CLOB         NOT NULL,
   `model_name`    VARCHAR(50)  NOT NULL DEFAULT 'deepseek-chat',
+  `provider_id`   BIGINT,
   `temperature`   DECIMAL(3,2) NOT NULL DEFAULT 0.70,
   `mode`          VARCHAR(20)  NOT NULL DEFAULT 'chat',
   `workflow_id`   BIGINT,
+  `visibility`    VARCHAR(20)  NOT NULL DEFAULT 'PRIVATE',
   `creator_id`    BIGINT       NOT NULL,
   `deleted`       TINYINT      NOT NULL DEFAULT 0,
   `created_time`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -49,6 +51,25 @@ CREATE TABLE IF NOT EXISTS `agent_tool` (
   CONSTRAINT `fk_agent_tool_agent` FOREIGN KEY (`agent_id`) REFERENCES `agent` (`id`)
 );
 
+-- M4 多模型配置：模型 Provider 表（models 用 CLOB 存 JSON，与 conversation.sources 约定一致）
+CREATE TABLE IF NOT EXISTS `model_provider` (
+  `id`            BIGINT       NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `name`          VARCHAR(100) NOT NULL,
+  `provider_type` VARCHAR(20)  NOT NULL DEFAULT 'ollama',
+  `base_url`      VARCHAR(300) NOT NULL,
+  `api_key`       VARCHAR(300),
+  `models`        CLOB,
+  `enabled`       TINYINT      NOT NULL DEFAULT 1,
+  `creator_id`    BIGINT       NOT NULL,
+  `deleted`       TINYINT      NOT NULL DEFAULT 0,
+  `created_time`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_time`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 幂等插入内置 Provider（多 Spring context 共享内存库时避免重复）
+INSERT INTO `model_provider` (`name`, `provider_type`, `base_url`, `models`, `creator_id`)
+SELECT '本地 Ollama', 'ollama', 'http://ollama:11434', '["qwen3.5:0.8b","bge-m3"]', 0
+WHERE NOT EXISTS (SELECT 1 FROM `model_provider` WHERE `creator_id` = 0);
 CREATE TABLE IF NOT EXISTS `document` (
   `id`           BIGINT       NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `agent_id`     BIGINT       NOT NULL,

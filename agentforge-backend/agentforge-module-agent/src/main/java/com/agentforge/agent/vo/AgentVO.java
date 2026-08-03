@@ -21,6 +21,9 @@ public class AgentVO {
 
     private String modelName;
 
+    /** 模型 Provider ID（M4：NULL=内置 Ollama） */
+    private Long providerId;
+
     private BigDecimal temperature;
 
     /** 运行模式（M3）：chat / workflow */
@@ -28,6 +31,9 @@ public class AgentVO {
 
     /** 绑定的工作流 ID（mode=workflow 时生效） */
     private Long workflowId;
+
+    /** 可见性（M4）：PUBLIC 公开 / PRIVATE 私有（仅创建者可见） */
+    private String visibility;
 
     /** 创建者 ID */
     private Long creatorId;

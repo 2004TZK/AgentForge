@@ -35,6 +35,7 @@ venv/
 
 # ===== Docker =====
 docker/nginx/nginx.conf.local
+docker/nginx/certs/
 
 # ===== 数据与日志 =====
 data/

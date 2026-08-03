@@ -35,6 +35,10 @@
             <groupId>com.agentforge</groupId>
             <artifactId>agentforge-module-ai-gateway</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.agentforge</groupId>
+            <artifactId>agentforge-module-model</artifactId>
+        </dependency>
 
         <!-- 健康检查 -->
         <dependency>

@@ -4,10 +4,12 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '../../components/layout/AppLayout.vue'
 import { apiAgentDetail, apiToolsMeta } from '../../api/agent'
+import { apiProviderList } from '../../api/provider'
 import { apiWorkflowPage } from '../../api/workflow'
 import { useAgentStore } from '../../stores/agent'
 import { notifyError, notifySuccess } from '../../utils/notify'
 import type { AgentPayload, AgentTool, ToolMeta } from '../../types/agent'
+import type { Provider } from '../../types/provider'
 import type { Workflow } from '../../types/workflow'
 
 const route = useRoute()
@@ -24,12 +26,23 @@ const modelName = ref('deepseek-chat')
 const temperature = ref(0.7)
 /** M3 运行模式：chat 对话（LLM 工具循环） / workflow 工作流（消息作为 {message} 输入） */
 const mode = ref<'chat' | 'workflow'>('chat')
+/** M4 可见性：PUBLIC 公开（所有人可见）/ PRIVATE 私有（仅创建者可见） */
+const visibility = ref<'PUBLIC' | 'PRIVATE'>('PRIVATE')
 const workflowId = ref<number | null>(null)
 const workflows = ref<Workflow[]>([])
 const tools = ref<AgentTool[]>([{ toolName: 'calculator', toolConfig: {}, enabled: true }])
 const toolMeta = ref<ToolMeta[]>([])
+/** M4 模型 Provider：provider 下拉 + 可用模型联动 */
+const providers = ref<Provider[]>([])
+const providerId = ref<number | null>(null)
 const loading = ref(false)
 const saving = ref(false)
+
+/** 当前 Provider 的可用模型（未选择 Provider 时为空 → 自由输入） */
+const providerModels = computed(() => {
+  const p = providers.value.find((x) => x.id === providerId.value)
+  return p?.models ?? []
+})
 
 /** 工具选项（M3：由 /tools/meta 动态加载；加载失败时退回内置列表） */
 const toolOptions = computed(() =>
@@ -77,8 +90,10 @@ async function loadDetail(): Promise<void> {
     description.value = detail.description ?? ''
     systemPrompt.value = detail.systemPrompt
     modelName.value = detail.modelName
+    providerId.value = detail.providerId ?? null
     temperature.value = Number(detail.temperature)
     mode.value = detail.mode === 'workflow' ? 'workflow' : 'chat'
+    visibility.value = detail.visibility === 'PUBLIC' ? 'PUBLIC' : 'PRIVATE'
     workflowId.value = detail.workflowId ?? null
     tools.value = detail.tools.length ? detail.tools : []
   } finally {
@@ -100,6 +115,15 @@ onMounted(async () => {
   } catch {
     /* 工作流列表不可用时不展示选择器 */
   }
+  // 加载模型 Provider（M4：provider 下拉 + 模型联动；失败不阻断）
+  try {
+    providers.value = (await apiProviderList()).filter((p) => p.enabled)
+    if (providers.value.length && !providers.value.some((p) => p.id === providerId.value)) {
+      providerId.value = null
+    }
+  } catch {
+    /* Provider 列表不可用时回落默认模型 */
+  }
   await loadDetail()
 })
 
@@ -117,6 +141,7 @@ async function onSubmit(): Promise<void> {
     description: description.value.trim() || undefined,
     systemPrompt: systemPrompt.value,
     modelName: modelName.value || 'deepseek-chat',
+    providerId: providerId.value,
     temperature: Number(temperature.value) || 0.7,
     tools: tools.value.map((t) => ({
       toolName: t.toolName,
@@ -124,6 +149,7 @@ async function onSubmit(): Promise<void> {
       enabled: t.enabled !== false,
     })),
     mode: mode.value,
+    visibility: visibility.value,
     workflowId: workflowId.value,
   }
   saving.value = true
@@ -176,8 +202,25 @@ async function onSubmit(): Promise<void> {
 
         <div class="form-row">
           <div class="form-item">
-            <label>模型</label>
-            <input v-model="modelName" class="input" placeholder="deepseek-chat" />
+            <label>模型 Provider（M4）</label>
+            <select v-model="providerId" class="select">
+              <option :value="null">内置 Ollama（本机）</option>
+              <option v-for="p in providers" :key="p.id" :value="p.id">
+                {{ p.name }}（{{ p.providerType }}）
+              </option>
+            </select>
+          </div>
+          <div class="form-item">
+            <label>模型名称</label>
+            <input
+              v-if="!providerModels.length"
+              v-model="modelName"
+              class="input"
+              placeholder="qwen3.5:0.8b"
+            />
+            <select v-else v-model="modelName" class="select">
+              <option v-for="m in providerModels" :key="m" :value="m">{{ m }}</option>
+            </select>
           </div>
           <div class="form-item">
             <label>温度（0-1）</label>
@@ -207,6 +250,20 @@ async function onSubmit(): Promise<void> {
             <p v-if="!workflows.length" class="muted small-tip">
               暂无工作流，请先到「工作流」页面创建
             </p>
+          </div>
+        </div>
+
+        <div class="form-item">
+          <label>可见性（M4）</label>
+          <div class="mode-row">
+            <label class="mode-option">
+              <input v-model="visibility" type="radio" value="PRIVATE" />
+              私有 <span class="muted">— 仅创建者可见可用</span>
+            </label>
+            <label class="mode-option">
+              <input v-model="visibility" type="radio" value="PUBLIC" />
+              公开 <span class="muted">— 所有登录用户可见并可使用</span>
+            </label>
           </div>
         </div>
 

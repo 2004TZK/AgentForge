@@ -1,5 +1,6 @@
 package com.agentforge.file.service.impl;
 
+import com.agentforge.agent.mapper.AgentMapper;
 import com.agentforge.aigateway.client.AiServiceClient;
 import com.agentforge.aigateway.dto.AiDeleteResponse;
 import com.agentforge.aigateway.dto.AiIngestResponse;
@@ -47,12 +48,15 @@ public class FileServiceImpl implements FileService {
 
     private final DocumentMapper documentMapper;
     private final AiServiceClient aiServiceClient;
+    private final AgentMapper agentMapper;
     private final Path uploadRoot;
 
     public FileServiceImpl(DocumentMapper documentMapper, AiServiceClient aiServiceClient,
+                           AgentMapper agentMapper,
                            @Value("${agentforge.upload.dir:./data/uploads}") String uploadDir) {
         this.documentMapper = documentMapper;
         this.aiServiceClient = aiServiceClient;
+        this.agentMapper = agentMapper;
         this.uploadRoot = Paths.get(uploadDir).toAbsolutePath().normalize();
     }
 
@@ -143,8 +147,9 @@ public class FileServiceImpl implements FileService {
 
     @Override
     @Transactional
-    public void delete(Long documentId) {
+    public void delete(Long documentId, Long operatorId) {
         Document document = getDocumentOrThrow(documentId);
+        checkOwner(document, operatorId);
         String relativePath = document.getFilePath();
 
         // 1. 删除 Qdrant 向量（失败抛出业务异常，事务回滚元数据删除，
@@ -167,8 +172,9 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public DocumentVO retryIngest(Long documentId) {
+    public DocumentVO retryIngest(Long documentId, Long operatorId) {
         Document document = getDocumentOrThrow(documentId);
+        checkOwner(document, operatorId);
         if ("READY".equals(document.getStatus())) {
             throw new BusinessException(ResultCode.BUSINESS_ERROR, "该文档已入库完成，无需重试");
         }
@@ -193,6 +199,14 @@ public class FileServiceImpl implements FileService {
             throw new BusinessException(ResultCode.RESOURCE_NOT_FOUND, "文档不存在");
         }
         return document;
+    }
+
+    /** M4 归属校验：仅文档所属 Agent 的创建者可删除/重试 */
+    private void checkOwner(Document document, Long operatorId) {
+        com.agentforge.agent.entity.Agent agent = agentMapper.selectById(document.getAgentId());
+        if (agent == null || !agent.getCreatorId().equals(operatorId)) {
+            throw new BusinessException(ResultCode.FORBIDDEN, "仅智能体创建者可管理文档");
+        }
     }
 
     /** 提取小写扩展名（不含点） */

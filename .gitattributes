@@ -1,0 +1,7 @@
+# 脚本与配置文件统一 LF（Docker 容器内 sh 执行，CRLF 会导致命令失败）
+*.sh text eol=lf
+*.py text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.sql text eol=lf
+Dockerfile text eol=lf

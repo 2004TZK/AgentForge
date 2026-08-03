@@ -30,7 +30,8 @@ import java.util.stream.Collectors;
 
 /**
  * 智能体服务实现。
- * 权限规则：仅创建者可修改/删除（FORBIDDEN）；列表与详情对所有登录用户开放。
+ * 权限规则（M4）：PRIVATE 仅创建者可见（列表过滤、详情校验）；PUBLIC 所有人可见；
+ * 修改/删除仅创建者（FORBIDDEN）。
  */
 @Slf4j
 @Service
@@ -42,8 +43,10 @@ public class AgentServiceImpl implements AgentService {
     private final WorkflowService workflowService;
 
     @Override
-    public PageResult<AgentVO> page(long page, long size, String name) {
+    public PageResult<AgentVO> page(long page, long size, String name, Long viewerId) {
         LambdaQueryWrapper<Agent> wrapper = new LambdaQueryWrapper<Agent>()
+                .and(w -> w.eq(Agent::getVisibility, "PUBLIC")
+                        .or(eqCreator(viewerId)))
                 .like(StringUtils.hasText(name), Agent::getName, name)
                 .orderByDesc(Agent::getId);
         IPage<Agent> result = agentMapper.selectPage(Page.of(page, size), wrapper);
@@ -52,8 +55,9 @@ public class AgentServiceImpl implements AgentService {
     }
 
     @Override
-    public AgentDetailVO detail(Long agentId) {
+    public AgentDetailVO detail(Long agentId, Long viewerId) {
         Agent agent = getAgentOrThrow(agentId);
+        checkVisible(agent, viewerId);
         return toDetailVO(agent);
     }
 
@@ -66,9 +70,11 @@ public class AgentServiceImpl implements AgentService {
         agent.setDescription(request.getDescription());
         agent.setSystemPrompt(request.getSystemPrompt());
         agent.setModelName(request.getModelName());
+        agent.setProviderId(request.getProviderId());
         agent.setTemperature(request.getTemperature());
         agent.setMode(request.getMode());
         agent.setWorkflowId(request.getWorkflowId());
+        agent.setVisibility(normalizeVisibility(request.getVisibility()));
         agent.setCreatorId(creatorId);
         agentMapper.insert(agent);
         saveTools(agent.getId(), request.getTools());
@@ -87,9 +93,11 @@ public class AgentServiceImpl implements AgentService {
         agent.setDescription(request.getDescription());
         agent.setSystemPrompt(request.getSystemPrompt());
         agent.setModelName(request.getModelName());
+        agent.setProviderId(request.getProviderId());
         agent.setTemperature(request.getTemperature());
         agent.setMode(request.getMode());
         agent.setWorkflowId(request.getWorkflowId());
+        agent.setVisibility(normalizeVisibility(request.getVisibility()));
         agentMapper.updateById(agent);
 
         // 工具配置整体替换：旧配置逻辑删除后重新插入
@@ -124,6 +132,23 @@ public class AgentServiceImpl implements AgentService {
         if (!agent.getCreatorId().equals(operatorId)) {
             throw new BusinessException(ResultCode.FORBIDDEN, "仅创建者可修改/删除该智能体");
         }
+    }
+
+    /** M4 可见性校验：PRIVATE 非创建者视为不存在（不泄露存在性） */
+    private void checkVisible(Agent agent, Long viewerId) {
+        if (!"PUBLIC".equals(agent.getVisibility()) && !agent.getCreatorId().equals(viewerId)) {
+            throw new BusinessException(ResultCode.RESOURCE_NOT_FOUND, "智能体不存在");
+        }
+    }
+
+    /** 可见性归一化：非法值回落 PRIVATE */
+    private String normalizeVisibility(String visibility) {
+        return "PUBLIC".equals(visibility) ? "PUBLIC" : "PRIVATE";
+    }
+
+    /** 查询条件：创建者过滤（用于 and 分组：PUBLIC 或 本人） */
+    private static java.util.function.Consumer<LambdaQueryWrapper<Agent>> eqCreator(Long creatorId) {
+        return w -> w.eq(Agent::getCreatorId, creatorId);
     }
 
     /** 运行模式校验：workflow 模式必须绑定本人名下的工作流 */
@@ -164,9 +189,11 @@ public class AgentServiceImpl implements AgentService {
                 .name(agent.getName())
                 .description(agent.getDescription())
                 .modelName(agent.getModelName())
+                .providerId(agent.getProviderId())
                 .temperature(agent.getTemperature())
                 .mode(agent.getMode())
                 .workflowId(agent.getWorkflowId())
+                .visibility(agent.getVisibility())
                 .creatorId(agent.getCreatorId())
                 .createdTime(agent.getCreatedTime())
                 .build();
@@ -190,9 +217,11 @@ public class AgentServiceImpl implements AgentService {
                 .description(agent.getDescription())
                 .systemPrompt(agent.getSystemPrompt())
                 .modelName(agent.getModelName())
+                .providerId(agent.getProviderId())
                 .temperature(agent.getTemperature())
                 .mode(agent.getMode())
                 .workflowId(agent.getWorkflowId())
+                .visibility(agent.getVisibility())
                 .creatorId(agent.getCreatorId())
                 .createdTime(agent.getCreatedTime())
                 .tools(toolVOs)

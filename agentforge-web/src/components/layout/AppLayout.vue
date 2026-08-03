@@ -20,6 +20,7 @@ function logout(): void {
         <router-link to="/chat" class="nav-link">聊天</router-link>
         <router-link to="/files" class="nav-link">文件</router-link>
         <router-link to="/workflows" class="nav-link">工作流</router-link>
+        <router-link to="/models" class="nav-link">模型</router-link>
       </nav>
     </aside>
     <div class="main">

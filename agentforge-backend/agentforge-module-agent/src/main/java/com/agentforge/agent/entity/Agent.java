@@ -31,6 +31,9 @@ public class Agent {
     /** 默认模型 */
     private String modelName;
 
+    /** 模型 Provider ID（M4：NULL=内置 Ollama） */
+    private Long providerId;
+
     /** 采样温度 */
     private BigDecimal temperature;
 
@@ -39,6 +42,9 @@ public class Agent {
 
     /** 绑定的工作流 ID（mode=workflow 时生效） */
     private Long workflowId;
+
+    /** 可见性（M4）：PUBLIC 公开 / PRIVATE 私有（仅创建者可见），缺省 PRIVATE */
+    private String visibility;
 
     /** 创建者 ID */
     private Long creatorId;
