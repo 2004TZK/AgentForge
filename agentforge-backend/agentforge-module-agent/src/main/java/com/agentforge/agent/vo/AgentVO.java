@@ -23,6 +23,12 @@ public class AgentVO {
 
     private BigDecimal temperature;
 
+    /** 运行模式（M3）：chat / workflow */
+    private String mode;
+
+    /** 绑定的工作流 ID（mode=workflow 时生效） */
+    private Long workflowId;
+
     /** 创建者 ID */
     private Long creatorId;
 

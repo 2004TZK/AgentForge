@@ -38,4 +38,10 @@ public class AgentCreateRequest {
     /** 工具配置列表 */
     @Valid
     private List<ToolConfigRequest> tools = new ArrayList<>();
+
+    /** 运行模式（M3）：chat / workflow，缺省 chat */
+    private String mode = "chat";
+
+    /** 绑定的工作流 ID（mode=workflow 时生效） */
+    private Long workflowId;
 }

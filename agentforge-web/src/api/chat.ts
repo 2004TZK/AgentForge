@@ -39,21 +39,34 @@ export function apiSessionDelete(id: number): Promise<void> {
   return http.del<void>(`/chat/session/${id}`)
 }
 
-/** SSE 事件（与后端 /chat/stream 对齐） */
+/** 工具执行事件（M3：tool 轮执行结果，实时展示工具活动） */
+export interface ToolEvent {
+  name: string
+  arguments: Record<string, unknown>
+  result: string
+}
+
+/** SSE 事件（与后端 /chat/stream 对齐；M3 新增 tool 类型） */
 export interface ChatStreamEvent {
-  type: 'delta' | 'done' | 'error'
+  type: 'delta' | 'done' | 'error' | 'tool'
   content?: string
   answer?: string
   sources?: SourceItem[]
   toolCalls?: string[]
   code?: number
   message?: string
+  /** tool 事件的附加字段 */
+  name?: string
+  arguments?: Record<string, unknown>
+  result?: string
 }
 
 export interface ChatStreamHandlers {
   onDelta: (content: string) => void
   onDone: (result: ChatResult) => void
   onError: (message: string) => void
+  /** M3：工具执行完成（tool 事件） */
+  onTool?: (event: ToolEvent) => void
 }
 
 /**
@@ -121,6 +134,15 @@ export async function apiChatStream(
         break
       case 'error':
         handlers.onError(event.message || '回答失败')
+        break
+      case 'tool':
+        if (handlers.onTool) {
+          handlers.onTool({
+            name: event.name || '',
+            arguments: event.arguments || {},
+            result: event.result || '',
+          })
+        }
         break
     }
   }

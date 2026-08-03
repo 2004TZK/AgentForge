@@ -34,6 +34,12 @@ public class Agent {
     /** 采样温度 */
     private BigDecimal temperature;
 
+    /** 运行模式（M3）：chat 对话模式 / workflow 工作流模式 */
+    private String mode;
+
+    /** 绑定的工作流 ID（mode=workflow 时生效） */
+    private Long workflowId;
+
     /** 创建者 ID */
     private Long creatorId;
 

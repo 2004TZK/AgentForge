@@ -40,6 +40,9 @@ public abstract class IntegrationTestBase {
 
     @BeforeEach
     void cleanDatabase() {
+        jdbcTemplate.execute("DELETE FROM workflow_run");
+        jdbcTemplate.execute("DELETE FROM workflow_node");
+        jdbcTemplate.execute("DELETE FROM workflow");
         jdbcTemplate.execute("DELETE FROM conversation");
         jdbcTemplate.execute("DELETE FROM document");
         jdbcTemplate.execute("DELETE FROM agent_tool");

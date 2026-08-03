@@ -15,6 +15,8 @@ export interface ChatMessage {
   content: string
   /** 引用来源（助手消息） */
   sources?: SourceItem[]
+  /** 工具调用记录（M3：如 'calculator({"expression":"2+2"}) → 4'，助手消息） */
+  toolCalls?: string[]
   /** 助手消息流式/失败状态（用户消息与历史消息无该字段） */
   status?: ChatMessageStatus
   /** 失败原因（status=error 时展示） */

@@ -183,6 +183,12 @@ onMounted(async () => {
               <MarkdownView v-if="msg.role === 'assistant'" :content="msg.content" />
               <template v-else>{{ msg.content }}</template>
               <span v-if="msg.status === 'streaming'" class="cursor">▍</span>
+              <div v-if="msg.role === 'assistant' && msg.toolCalls?.length" class="tool-calls">
+                <span class="tool-calls-label">🔧 工具：</span>
+                <span v-for="(call, callIdx) in msg.toolCalls" :key="callIdx" class="tool-chip">
+                  {{ call }}
+                </span>
+              </div>
               <div v-if="msg.role === 'assistant' && msg.sources?.length" class="sources">
                 <span class="sources-label">来源：</span>
                 <button
@@ -372,6 +378,29 @@ onMounted(async () => {
   50% {
     opacity: 0;
   }
+}
+
+.tool-calls {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.tool-calls-label {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.tool-chip {
+  border: 1px dashed var(--color-primary);
+  color: var(--color-primary);
+  background: rgba(37, 99, 235, 0.04);
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 12px;
+  word-break: break-all;
 }
 
 .sources {

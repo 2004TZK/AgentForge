@@ -6,7 +6,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import chat, health, rag
+from app.api import chat, health, rag, tools, workflow
 from app.core.config import settings
 from app.core.errors import AiServiceError
 from app.core.logging import setup_logging
@@ -44,6 +44,8 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(chat.router)
 app.include_router(rag.router)
+app.include_router(tools.router)
+app.include_router(workflow.router)
 
 
 @app.exception_handler(AiServiceError)

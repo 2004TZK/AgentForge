@@ -1,5 +1,10 @@
-"""Github Tool：通过 GitHub 公开 API 查询仓库信息（名称/Star/语言/简介）。"""
+"""Github Tool：通过 GitHub 公开 API 查询仓库信息（名称/Star/语言/简介）。
+
+M3 起支持配置 API Token（tool_config.api_key 或环境变量 GITHUB_TOKEN），
+提升未认证 60 次/小时限流上限；未配置仍可用公开接口（限流可能 403）。
+"""
 import logging
+import os
 
 import httpx
 
@@ -8,14 +13,19 @@ logger = logging.getLogger(__name__)
 API_TIMEOUT = 10
 
 
-def query_repo(repo_path: str) -> dict:
+def query_repo(repo_path: str, config: dict | None = None) -> dict:
     """查询仓库，repo_path 形如 'owner/repo'，如 'spring-projects/spring-boot'。"""
     repo_path = repo_path.strip().strip("/")
     if "/" not in repo_path:
         raise ValueError("仓库格式应为 owner/repo，如 spring-projects/spring-boot")
     url = f"https://api.github.com/repos/{repo_path}"
+    headers = {"Accept": "application/vnd.github+json",
+               "X-GitHub-Api-Version": "2022-11-28"}
+    api_key = (config or {}).get("api_key") or os.getenv("GITHUB_TOKEN", "")
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
     try:
-        resp = httpx.get(url, timeout=API_TIMEOUT, headers={"Accept": "application/vnd.github+json"})
+        resp = httpx.get(url, timeout=API_TIMEOUT, headers=headers)
         if resp.status_code == 404:
             raise ValueError(f"仓库不存在: {repo_path}")
         resp.raise_for_status()
@@ -36,4 +46,8 @@ SCHEMA = {
     "name": "github",
     "description": "查询 GitHub 仓库的名称、Star 数、语言与简介。",
     "parameters": {"repo": {"type": "string", "description": "仓库路径 owner/repo"}},
+    "config": {
+        "api_key": {"type": "string",
+                    "description": "GitHub Personal Access Token（可选，提升 API 限流额度）"},
+    },
 }

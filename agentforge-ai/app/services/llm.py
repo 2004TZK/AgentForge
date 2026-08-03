@@ -171,6 +171,216 @@ class LLMClient:
         except httpx.HTTPError as exc:
             raise LLMUnavailableError(f"模型服务连接失败: {exc}") from exc
 
+    # ---------------- 工具调用（M3 Phase 4：LLM 依据 Schema 自主选择） ----------------
+
+    def chat_with_tools(self, messages: list[dict], tools: list[dict],
+                        temperature: float = 0.7) -> dict:
+        """携带工具 Schema 调用模型，返回 {"content": str, "tool_calls": [...]}。
+
+        tool_calls 归一化为 [{"name", "arguments": dict, "tool_call_id"?: str}]，
+        供 ReAct 循环直接执行。本地模型走 Ollama 原生 /api/chat（tools 与 think 并存），
+        远端模型走 OpenAI 兼容 /chat/completions。
+        """
+        if not tools:
+            return {"content": self.chat(messages, temperature), "tool_calls": []}
+        if not self.available:
+            return {"content": self.mock_chat(messages), "tool_calls": []}
+        if settings.llm_local:
+            return self._chat_native_tools(messages, tools, temperature)
+        return self._chat_openai_tools(messages, tools, temperature)
+
+    async def chat_stream_with_tools(self, messages: list[dict], tools: list[dict],
+                                     temperature: float = 0.7):
+        """流式工具调用：逐块产出 {"type": "delta", "content"} 事件，
+        结束产出 {"type": "done", "content": 全文, "tool_calls": [...]} 事件。
+
+        工具调用轮通常无内容增量（模型直接输出 tool_calls）；文本轮增量照常输出。
+        """
+        if not tools:
+            full = ""
+            async for delta in self.chat_stream(messages, temperature):
+                full += delta
+                yield {"type": "delta", "content": delta}
+            yield {"type": "done", "content": full, "tool_calls": []}
+            return
+        if not self.available:
+            text = self.mock_chat(messages)
+            for i in range(0, len(text), _MOCK_CHUNK_SIZE):
+                await asyncio.sleep(0.02)
+                yield {"type": "delta", "content": text[i : i + _MOCK_CHUNK_SIZE]}
+            yield {"type": "done", "content": text, "tool_calls": []}
+            return
+        if settings.llm_local:
+            async for event in self._stream_native_tools(messages, tools, temperature):
+                yield event
+            return
+        async for event in self._stream_openai_tools(messages, tools, temperature):
+            yield event
+
+    def _chat_native_tools(self, messages: list[dict], tools: list[dict],
+                           temperature: float) -> dict:
+        """Ollama 原生 /api/chat + tools（本地模型专用，think 可控，见 _chat_native 说明）。"""
+        payload = {
+            "model": self.model,
+            "messages": messages,
+            "tools": tools,
+            "stream": False,
+            "think": settings.llm_think,
+            "options": {"temperature": temperature},
+        }
+        try:
+            resp = httpx.post(f"{self._native_base()}/api/chat",
+                              headers=self._headers(), json=payload, timeout=self.timeout)
+            self._raise_for_llm(resp)
+            try:
+                message = resp.json()["message"]
+                return self._normalize_tool_message(message, has_tool_call_id=False)
+            except (KeyError, IndexError, ValueError) as exc:
+                raise LLMModelError(f"模型返回格式异常: {exc}") from exc
+        except AiServiceError:
+            raise
+        except httpx.TimeoutException as exc:
+            raise LLMTimeoutError(f"模型调用超时（{self.timeout}s）") from exc
+        except httpx.HTTPError as exc:
+            raise LLMUnavailableError(f"模型服务连接失败: {exc}") from exc
+
+    def _chat_openai_tools(self, messages: list[dict], tools: list[dict],
+                           temperature: float) -> dict:
+        """OpenAI 兼容 /chat/completions + tools（远端模型；本地 qwen3.5 不走此路径）。"""
+        payload = self._payload(messages, temperature)
+        payload["tools"] = tools
+        try:
+            resp = httpx.post(f"{self.base_url}/chat/completions",
+                              headers=self._headers(), json=payload, timeout=self.timeout)
+            self._raise_for_llm(resp)
+            try:
+                message = resp.json()["choices"][0]["message"]
+                return self._normalize_tool_message(message, has_tool_call_id=True)
+            except (KeyError, IndexError, ValueError) as exc:
+                raise LLMModelError(f"模型返回格式异常: {exc}") from exc
+        except AiServiceError:
+            raise
+        except httpx.TimeoutException as exc:
+            raise LLMTimeoutError(f"模型调用超时（{self.timeout}s）") from exc
+        except httpx.HTTPError as exc:
+            raise LLMUnavailableError(f"模型服务连接失败: {exc}") from exc
+
+    async def _stream_native_tools(self, messages: list[dict], tools: list[dict],
+                                   temperature: float):
+        """Ollama 原生 /api/chat 流式 + tools：增量事件 + 结束事件（含 tool_calls）。"""
+        payload = {
+            "model": self.model,
+            "messages": messages,
+            "tools": tools,
+            "stream": True,
+            "think": settings.llm_think,
+            "options": {"temperature": temperature},
+        }
+        full = ""
+        tool_calls: list[dict] = []
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                async with client.stream(
+                    "POST", f"{self._native_base()}/api/chat",
+                    headers=self._headers(), json=payload,
+                ) as resp:
+                    self._raise_for_llm(resp)
+                    async for line in resp.aiter_lines():
+                        if not line.strip():
+                            continue
+                        try:
+                            data = json.loads(line)
+                        except ValueError:
+                            logger.warning("忽略异常流式分块: %s", line[:200])
+                            continue
+                        message = data.get("message", {})
+                        delta = message.get("content", "")
+                        if delta:
+                            full += delta
+                            yield {"type": "delta", "content": delta}
+                        for tc in message.get("tool_calls", []) or []:
+                            tool_calls.append(self._normalize_tool_call(
+                                tc.get("function", {}), has_tool_call_id=False))
+                        if data.get("done"):
+                            break
+            yield {"type": "done", "content": full, "tool_calls": tool_calls}
+        except AiServiceError:
+            raise
+        except httpx.TimeoutException as exc:
+            raise LLMTimeoutError(f"模型流式调用超时（{self.timeout}s）") from exc
+        except httpx.HTTPError as exc:
+            raise LLMUnavailableError(f"模型服务连接失败: {exc}") from exc
+
+    async def _stream_openai_tools(self, messages: list[dict], tools: list[dict],
+                                   temperature: float):
+        """OpenAI 兼容流式 + tools：增量事件 + 结束事件（远端模型路径）。"""
+        payload = self._payload(messages, temperature)
+        payload["tools"] = tools
+        payload["stream"] = True
+        full = ""
+        tool_calls: list[dict] = []
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                async with client.stream(
+                    "POST", f"{self.base_url}/chat/completions",
+                    headers=self._headers(), json=payload,
+                ) as resp:
+                    self._raise_for_llm(resp)
+                    async for line in resp.aiter_lines():
+                        if not line.startswith("data:"):
+                            continue
+                        chunk = line[len("data:"):].strip()
+                        if chunk == "[DONE]":
+                            break
+                        try:
+                            delta = json.loads(chunk)["choices"][0]["delta"]
+                        except (KeyError, IndexError, ValueError):
+                            logger.warning("忽略异常流式分块: %s", chunk[:200])
+                            continue
+                        content = delta.get("content")
+                        if content:
+                            full += content
+                            yield {"type": "delta", "content": content}
+                        for tc in delta.get("tool_calls", []) or []:
+                            fn = tc.get("function", {})
+                            tool_calls.append(self._normalize_tool_call(
+                                fn, has_tool_call_id=True,
+                                tool_call_id=tc.get("id")))
+            yield {"type": "done", "content": full, "tool_calls": tool_calls}
+        except AiServiceError:
+            raise
+        except httpx.TimeoutException as exc:
+            raise LLMTimeoutError(f"模型流式调用超时（{self.timeout}s）") from exc
+        except httpx.HTTPError as exc:
+            raise LLMUnavailableError(f"模型服务连接失败: {exc}") from exc
+
+    @staticmethod
+    def _normalize_tool_message(message: dict, has_tool_call_id: bool) -> dict:
+        """归一化模型返回的 message：提取 content 与 tool_calls（Ollama/OpenAI 格式差异）。"""
+        tool_calls = []
+        for tc in message.get("tool_calls", []) or []:
+            fn = tc.get("function", {})
+            tool_calls.append(LLMClient._normalize_tool_call(
+                fn, has_tool_call_id=has_tool_call_id, tool_call_id=tc.get("id")))
+        return {"content": message.get("content") or "", "tool_calls": tool_calls}
+
+    @staticmethod
+    def _normalize_tool_call(fn: dict, has_tool_call_id: bool, tool_call_id=None) -> dict:
+        """归一化单个 tool_call：arguments 兼容字符串/dict，附加 tool_call_id（OpenAI 协议回填用）。"""
+        name = fn.get("name", "")
+        arguments = fn.get("arguments", {})
+        if isinstance(arguments, str):
+            try:
+                arguments = json.loads(arguments)
+            except ValueError:
+                arguments = {"_raw": arguments}
+        if not isinstance(arguments, dict):
+            arguments = {"_raw": str(arguments)}
+        call = {"name": name, "arguments": arguments}
+        if has_tool_call_id:
+            call["tool_call_id"] = tool_call_id
+        return call
+
     def mock_chat(self, messages: list[dict]) -> str:
         """Mock 回答：仅用于本地开发与联调，不产生真实费用。"""
         user_msg = next((m["content"] for m in reversed(messages) if m["role"] == "user"), "")
