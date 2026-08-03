@@ -81,7 +81,7 @@ public class ConversationServiceImpl implements ConversationService {
     @Override
     @Transactional
     public ChatVO chat(ChatRequest request, Long userId) {
-        Agent agent = loadAgentOrThrow(request.getAgentId());
+        Agent agent = loadAgentVisibleOrThrow(request.getAgentId(), userId);
 
         // M3 工作流模式：聊天消息作为工作流输入 {message}，答案取流程输出
         if ("workflow".equals(agent.getMode())) {
@@ -109,7 +109,7 @@ public class ConversationServiceImpl implements ConversationService {
     @Override
     public StreamingResponseBody chatStream(ChatRequest request, Long userId) {
         // 参数/权限校验在进入流式前完成；真正的 IO 透传发生在 WebMvc 异步线程
-        Agent agent = loadAgentOrThrow(request.getAgentId());
+        Agent agent = loadAgentVisibleOrThrow(request.getAgentId(), userId);
         if ("workflow".equals(agent.getMode())) {
             // M3 工作流模式：运行工作流后按块输出答案（打字机效果一致）
             return outputStream -> relayWorkflowStream(agent, request, userId, outputStream);
@@ -288,6 +288,15 @@ public class ConversationServiceImpl implements ConversationService {
     private Agent loadAgentOrThrow(Long agentId) {
         Agent agent = agentMapper.selectById(agentId);
         if (agent == null) {
+            throw new BusinessException(ResultCode.RESOURCE_NOT_FOUND, "智能体不存在");
+        }
+        return agent;
+    }
+
+    /** M4 可见性校验：PRIVATE 仅创建者可聊天，非创建者视为不存在 */
+    private Agent loadAgentVisibleOrThrow(Long agentId, Long userId) {
+        Agent agent = loadAgentOrThrow(agentId);
+        if (!"PUBLIC".equals(agent.getVisibility()) && !agent.getCreatorId().equals(userId)) {
             throw new BusinessException(ResultCode.RESOURCE_NOT_FOUND, "智能体不存在");
         }
         return agent;

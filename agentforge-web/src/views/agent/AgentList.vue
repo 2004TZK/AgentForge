@@ -79,6 +79,7 @@ onMounted(load)
               <th>描述</th>
               <th>模型</th>
               <th>温度</th>
+              <th>可见性</th>
               <th>创建时间</th>
               <th style="width: 200px">操作</th>
             </tr>
@@ -92,6 +93,11 @@ onMounted(load)
               <td class="muted ellipsis">{{ agent.description || '-' }}</td>
               <td>{{ agent.modelName }}</td>
               <td>{{ agent.temperature }}</td>
+              <td>
+                <span class="badge" :class="agent.visibility === 'PUBLIC' ? 'badge-ok' : 'badge-muted'">
+                  {{ agent.visibility === 'PUBLIC' ? '公开' : '私有' }}
+                </span>
+              </td>
               <td class="muted">{{ new Date(agent.createdTime).toLocaleString() }}</td>
               <td>
                 <button class="btn btn-secondary btn-sm" @click="goChat(agent.id)">聊天</button>
@@ -106,7 +112,7 @@ onMounted(load)
               </td>
             </tr>
             <tr v-if="!agentStore.loading && agentStore.list.length === 0">
-              <td colspan="6" class="muted" style="text-align: center; padding: 32px">
+              <td colspan="7" class="muted" style="text-align: center; padding: 32px">
                 暂无智能体，点击右上角「新建智能体」开始创建
               </td>
             </tr>
@@ -152,5 +158,21 @@ onMounted(load)
 
 td .btn {
   margin-right: 6px;
+}
+
+.badge {
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.badge-ok {
+  background: rgba(34, 197, 94, 0.12);
+  color: #16a34a;
+}
+
+.badge-muted {
+  background: rgba(148, 163, 184, 0.15);
+  color: #94a3b8;
 }
 </style>

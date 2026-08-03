@@ -44,4 +44,7 @@ public class AgentCreateRequest {
 
     /** 绑定的工作流 ID（mode=workflow 时生效） */
     private Long workflowId;
+
+    /** 可见性（M4）：PUBLIC / PRIVATE（仅创建者可见），缺省 PRIVATE */
+    private String visibility = "PRIVATE";
 }

@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS `agent` (
   `temperature`   DECIMAL(3,2) NOT NULL DEFAULT 0.70,
   `mode`          VARCHAR(20)  NOT NULL DEFAULT 'chat',
   `workflow_id`   BIGINT,
+  `visibility`    VARCHAR(20)  NOT NULL DEFAULT 'PRIVATE',
   `creator_id`    BIGINT       NOT NULL,
   `deleted`       TINYINT      NOT NULL DEFAULT 0,
   `created_time`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,

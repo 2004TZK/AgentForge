@@ -24,6 +24,8 @@ const modelName = ref('deepseek-chat')
 const temperature = ref(0.7)
 /** M3 运行模式：chat 对话（LLM 工具循环） / workflow 工作流（消息作为 {message} 输入） */
 const mode = ref<'chat' | 'workflow'>('chat')
+/** M4 可见性：PUBLIC 公开（所有人可见）/ PRIVATE 私有（仅创建者可见） */
+const visibility = ref<'PUBLIC' | 'PRIVATE'>('PRIVATE')
 const workflowId = ref<number | null>(null)
 const workflows = ref<Workflow[]>([])
 const tools = ref<AgentTool[]>([{ toolName: 'calculator', toolConfig: {}, enabled: true }])
@@ -79,6 +81,7 @@ async function loadDetail(): Promise<void> {
     modelName.value = detail.modelName
     temperature.value = Number(detail.temperature)
     mode.value = detail.mode === 'workflow' ? 'workflow' : 'chat'
+    visibility.value = detail.visibility === 'PUBLIC' ? 'PUBLIC' : 'PRIVATE'
     workflowId.value = detail.workflowId ?? null
     tools.value = detail.tools.length ? detail.tools : []
   } finally {
@@ -124,6 +127,7 @@ async function onSubmit(): Promise<void> {
       enabled: t.enabled !== false,
     })),
     mode: mode.value,
+    visibility: visibility.value,
     workflowId: workflowId.value,
   }
   saving.value = true
@@ -207,6 +211,20 @@ async function onSubmit(): Promise<void> {
             <p v-if="!workflows.length" class="muted small-tip">
               暂无工作流，请先到「工作流」页面创建
             </p>
+          </div>
+        </div>
+
+        <div class="form-item">
+          <label>可见性（M4）</label>
+          <div class="mode-row">
+            <label class="mode-option">
+              <input v-model="visibility" type="radio" value="PRIVATE" />
+              私有 <span class="muted">— 仅创建者可见可用</span>
+            </label>
+            <label class="mode-option">
+              <input v-model="visibility" type="radio" value="PUBLIC" />
+              公开 <span class="muted">— 所有登录用户可见并可使用</span>
+            </label>
           </div>
         </div>
 

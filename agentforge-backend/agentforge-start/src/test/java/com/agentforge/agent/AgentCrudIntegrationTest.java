@@ -151,6 +151,89 @@ class AgentCrudIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.code").value(10003));
     }
 
+    // ---------------- M4 可见性 ----------------
+
+    @Test
+    @DisplayName("默认私有：创建后 visibility=PRIVATE")
+    void defaultVisibility() throws Exception {
+        String token = registerAndLogin("alice");
+        MvcResult result = mockMvc.perform(post("/agent")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"默认可见性","systemPrompt":"x"}"""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.visibility").value("PRIVATE"))
+                .andReturn();
+        long agentId = extractId(result);
+
+        mockMvc.perform(get("/agent/{id}", agentId)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.visibility").value("PRIVATE"));
+    }
+
+    @Test
+    @DisplayName("私有仅创建者可见：他人列表不出现、详情返回 10003")
+    void privateAgentHiddenFromOthers() throws Exception {
+        String ownerToken = registerAndLogin("alice");
+        long agentId = createAgent(ownerToken, "私有助手", "x");
+
+        String otherToken = registerAndLogin("bob");
+        mockMvc.perform(get("/agent/page")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.total").value(0));
+        mockMvc.perform(get("/agent/{id}", agentId)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(10003));
+    }
+
+    @Test
+    @DisplayName("公开后他人可见：列表出现且详情可访问")
+    void publicAgentVisibleToOthers() throws Exception {
+        String ownerToken = registerAndLogin("alice");
+        long agentId = createAgent(ownerToken, "公开助手", "x");
+
+        // 设为公开
+        mockMvc.perform(put("/agent/{id}", agentId)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"公开助手","systemPrompt":"x","visibility":"PUBLIC"}"""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.visibility").value("PUBLIC"));
+
+        String otherToken = registerAndLogin("bob");
+        mockMvc.perform(get("/agent/page")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherToken)
+                        .param("name", "公开"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.total").value(1))
+                .andExpect(jsonPath("$.data.list[0].id").value(agentId));
+        mockMvc.perform(get("/agent/{id}", agentId)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + otherToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.visibility").value("PUBLIC"));
+    }
+
+    @Test
+    @DisplayName("非法可见性值回落 PRIVATE")
+    void invalidVisibilityFallsBack() throws Exception {
+        String token = registerAndLogin("alice");
+        mockMvc.perform(post("/agent")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"异常值","systemPrompt":"x","visibility":"SECRET"}"""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.visibility").value("PRIVATE"));
+    }
+
     // ---------------- 辅助 ----------------
 
     private long createAgent(String token, String name, String systemPrompt) throws Exception {
