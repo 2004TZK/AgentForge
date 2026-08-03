@@ -10,9 +10,9 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>agentforge-module-agent</artifactId>
-    <name>agentforge-module-agent</name>
-    <description>Agent CRUD、Agent-Tool 配置、文档元数据</description>
+    <artifactId>agentforge-module-workflow</artifactId>
+    <name>agentforge-module-workflow</name>
+    <description>Workflow v1：流程定义 CRUD、执行（经 ai-gateway 调 AI 服务 LangGraph 引擎）、运行日志</description>
 
     <dependencies>
         <dependency>
@@ -25,7 +25,7 @@
         </dependency>
         <dependency>
             <groupId>com.agentforge</groupId>
-            <artifactId>agentforge-module-workflow</artifactId>
+            <artifactId>agentforge-module-ai-gateway</artifactId>
         </dependency>
         <dependency>
             <groupId>com.baomidou</groupId>

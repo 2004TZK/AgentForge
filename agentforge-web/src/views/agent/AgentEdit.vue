@@ -1,12 +1,14 @@
 <script setup lang="ts">
-/** 新建/编辑智能体：基础信息 + 工具配置（M3 起按 Schema 渲染配置表单） */
+/** 新建/编辑智能体：基础信息 + 运行模式（M3）+ 工具配置（按 Schema 渲染配置表单） */
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '../../components/layout/AppLayout.vue'
 import { apiAgentDetail, apiToolsMeta } from '../../api/agent'
+import { apiWorkflowPage } from '../../api/workflow'
 import { useAgentStore } from '../../stores/agent'
 import { notifyError, notifySuccess } from '../../utils/notify'
 import type { AgentPayload, AgentTool, ToolMeta } from '../../types/agent'
+import type { Workflow } from '../../types/workflow'
 
 const route = useRoute()
 const router = useRouter()
@@ -20,6 +22,10 @@ const description = ref('')
 const systemPrompt = ref('')
 const modelName = ref('deepseek-chat')
 const temperature = ref(0.7)
+/** M3 运行模式：chat 对话（LLM 工具循环） / workflow 工作流（消息作为 {message} 输入） */
+const mode = ref<'chat' | 'workflow'>('chat')
+const workflowId = ref<number | null>(null)
+const workflows = ref<Workflow[]>([])
 const tools = ref<AgentTool[]>([{ toolName: 'calculator', toolConfig: {}, enabled: true }])
 const toolMeta = ref<ToolMeta[]>([])
 const loading = ref(false)
@@ -72,6 +78,8 @@ async function loadDetail(): Promise<void> {
     systemPrompt.value = detail.systemPrompt
     modelName.value = detail.modelName
     temperature.value = Number(detail.temperature)
+    mode.value = detail.mode === 'workflow' ? 'workflow' : 'chat'
+    workflowId.value = detail.workflowId ?? null
     tools.value = detail.tools.length ? detail.tools : []
   } finally {
     loading.value = false
@@ -84,6 +92,13 @@ onMounted(async () => {
     toolMeta.value = await apiToolsMeta()
   } catch {
     /* 元数据不可用时退回内置列表 */
+  }
+  // 加载本人工作流（工作流模式选择器；失败不阻断）
+  try {
+    const result = await apiWorkflowPage({ page: 1, size: 100 })
+    workflows.value = result.list
+  } catch {
+    /* 工作流列表不可用时不展示选择器 */
   }
   await loadDetail()
 })
@@ -108,6 +123,8 @@ async function onSubmit(): Promise<void> {
       toolConfig: t.toolConfig || {},
       enabled: t.enabled !== false,
     })),
+    mode: mode.value,
+    workflowId: workflowId.value,
   }
   saving.value = true
   try {
@@ -169,7 +186,32 @@ async function onSubmit(): Promise<void> {
         </div>
 
         <div class="form-item">
-          <label>工具配置（M3：LLM 依据 Schema 自主调用）</label>
+          <label>运行模式（M3）</label>
+          <div class="mode-row">
+            <label class="mode-option">
+              <input v-model="mode" type="radio" value="chat" />
+              对话模式 <span class="muted">— LLM 自主决策工具（ReAct 循环）</span>
+            </label>
+            <label class="mode-option">
+              <input v-model="mode" type="radio" value="workflow" />
+              工作流模式 <span class="muted">— 聊天消息作为 {message} 运行绑定的流程</span>
+            </label>
+          </div>
+          <div v-if="mode === 'workflow'" class="form-item">
+            <label>绑定工作流 *</label>
+            <select v-model="workflowId" class="select workflow-select">
+              <option v-for="wf in workflows" :key="wf.id" :value="wf.id">
+                {{ wf.name }}（{{ wf.nodes.length }} 节点）
+              </option>
+            </select>
+            <p v-if="!workflows.length" class="muted small-tip">
+              暂无工作流，请先到「工作流」页面创建
+            </p>
+          </div>
+        </div>
+
+        <div class="form-item">
+          <label>工具配置（M3：LLM 依据 Schema 自主调用；工作流模式下忽略）</label>
           <div v-for="(tool, index) in tools" :key="index" class="tool-card">
             <div class="tool-row">
               <select
@@ -230,6 +272,29 @@ async function onSubmit(): Promise<void> {
 
 .form-row .form-item {
   flex: 1;
+}
+
+.mode-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.mode-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.workflow-select {
+  max-width: 420px;
+}
+
+.small-tip {
+  font-size: 12px;
+  margin-top: 4px;
 }
 
 .tool-card {

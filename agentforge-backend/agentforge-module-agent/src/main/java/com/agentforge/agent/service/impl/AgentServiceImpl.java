@@ -14,6 +14,7 @@ import com.agentforge.agent.vo.AgentVO;
 import com.agentforge.common.core.PageResult;
 import com.agentforge.common.core.ResultCode;
 import com.agentforge.common.exception.BusinessException;
+import com.agentforge.workflow.service.WorkflowService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -38,6 +39,7 @@ public class AgentServiceImpl implements AgentService {
 
     private final AgentMapper agentMapper;
     private final AgentToolMapper agentToolMapper;
+    private final WorkflowService workflowService;
 
     @Override
     public PageResult<AgentVO> page(long page, long size, String name) {
@@ -58,12 +60,15 @@ public class AgentServiceImpl implements AgentService {
     @Override
     @Transactional
     public AgentDetailVO create(AgentCreateRequest request, Long creatorId) {
+        validateMode(request.getMode(), request.getWorkflowId(), creatorId);
         Agent agent = new Agent();
         agent.setName(request.getName().trim());
         agent.setDescription(request.getDescription());
         agent.setSystemPrompt(request.getSystemPrompt());
         agent.setModelName(request.getModelName());
         agent.setTemperature(request.getTemperature());
+        agent.setMode(request.getMode());
+        agent.setWorkflowId(request.getWorkflowId());
         agent.setCreatorId(creatorId);
         agentMapper.insert(agent);
         saveTools(agent.getId(), request.getTools());
@@ -76,12 +81,15 @@ public class AgentServiceImpl implements AgentService {
     public AgentDetailVO update(Long agentId, AgentUpdateRequest request, Long operatorId) {
         Agent agent = getAgentOrThrow(agentId);
         checkOwner(agent, operatorId);
+        validateMode(request.getMode(), request.getWorkflowId(), operatorId);
 
         agent.setName(request.getName().trim());
         agent.setDescription(request.getDescription());
         agent.setSystemPrompt(request.getSystemPrompt());
         agent.setModelName(request.getModelName());
         agent.setTemperature(request.getTemperature());
+        agent.setMode(request.getMode());
+        agent.setWorkflowId(request.getWorkflowId());
         agentMapper.updateById(agent);
 
         // 工具配置整体替换：旧配置逻辑删除后重新插入
@@ -118,6 +126,17 @@ public class AgentServiceImpl implements AgentService {
         }
     }
 
+    /** 运行模式校验：workflow 模式必须绑定本人名下的工作流 */
+    private void validateMode(String mode, Long workflowId, Long operatorId) {
+        if (!"workflow".equals(mode)) {
+            return;
+        }
+        if (workflowId == null) {
+            throw new BusinessException(ResultCode.PARAM_ERROR, "工作流模式必须绑定工作流");
+        }
+        workflowService.getOwned(workflowId, operatorId);
+    }
+
     /** 批量插入工具配置 */
     private void saveTools(Long agentId, List<ToolConfigRequest> tools) {
         if (tools == null || tools.isEmpty()) {
@@ -146,6 +165,8 @@ public class AgentServiceImpl implements AgentService {
                 .description(agent.getDescription())
                 .modelName(agent.getModelName())
                 .temperature(agent.getTemperature())
+                .mode(agent.getMode())
+                .workflowId(agent.getWorkflowId())
                 .creatorId(agent.getCreatorId())
                 .createdTime(agent.getCreatedTime())
                 .build();
@@ -170,6 +191,8 @@ public class AgentServiceImpl implements AgentService {
                 .systemPrompt(agent.getSystemPrompt())
                 .modelName(agent.getModelName())
                 .temperature(agent.getTemperature())
+                .mode(agent.getMode())
+                .workflowId(agent.getWorkflowId())
                 .creatorId(agent.getCreatorId())
                 .createdTime(agent.getCreatedTime())
                 .tools(toolVOs)

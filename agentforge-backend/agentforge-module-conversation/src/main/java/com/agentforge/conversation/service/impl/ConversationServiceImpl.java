@@ -20,6 +20,9 @@ import com.agentforge.conversation.mapper.SessionMapper;
 import com.agentforge.conversation.service.ConversationService;
 import com.agentforge.conversation.vo.ChatVO;
 import com.agentforge.conversation.vo.ConversationVO;
+import com.agentforge.workflow.entity.Workflow;
+import com.agentforge.workflow.service.WorkflowService;
+import com.agentforge.workflow.vo.WorkflowRunVO;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -73,11 +76,25 @@ public class ConversationServiceImpl implements ConversationService {
     private final AgentToolMapper agentToolMapper;
     private final AiServiceClient aiServiceClient;
     private final ObjectMapper objectMapper;
+    private final WorkflowService workflowService;
 
     @Override
     @Transactional
     public ChatVO chat(ChatRequest request, Long userId) {
-        AiChatRequest aiRequest = buildAiChatRequest(request, userId);
+        Agent agent = loadAgentOrThrow(request.getAgentId());
+
+        // M3 工作流模式：聊天消息作为工作流输入 {message}，答案取流程输出
+        if ("workflow".equals(agent.getMode())) {
+            WorkflowRunVO run = workflowService.runForAgent(
+                    loadAgentWorkflow(agent), agent.getId(), request.getMessage(), userId);
+            AiChatResponse workflowResponse = new AiChatResponse();
+            workflowResponse.setAnswer(run.getOutput() == null ? "" : run.getOutput());
+            recordConversation(request, userId, workflowResponse);
+            autoNameSession(request, userId);
+            return toChatVO(workflowResponse);
+        }
+
+        AiChatRequest aiRequest = buildAiChatRequest(agent, request, userId);
 
         // 调用 AI 服务（同步 JSON）
         AiChatResponse aiResponse = aiServiceClient.chat(aiRequest);
@@ -86,17 +103,18 @@ public class ConversationServiceImpl implements ConversationService {
         recordConversation(request, userId, aiResponse);
         autoNameSession(request, userId);
 
-        return ChatVO.builder()
-                .answer(aiResponse.getAnswer())
-                .sources(aiResponse.getSources() == null ? List.of() : aiResponse.getSources())
-                .toolCalls(aiResponse.getToolCalls() == null ? List.of() : aiResponse.getToolCalls())
-                .build();
+        return toChatVO(aiResponse);
     }
 
     @Override
     public StreamingResponseBody chatStream(ChatRequest request, Long userId) {
         // 参数/权限校验在进入流式前完成；真正的 IO 透传发生在 WebMvc 异步线程
-        AiChatRequest aiRequest = buildAiChatRequest(request, userId);
+        Agent agent = loadAgentOrThrow(request.getAgentId());
+        if ("workflow".equals(agent.getMode())) {
+            // M3 工作流模式：运行工作流后按块输出答案（打字机效果一致）
+            return outputStream -> relayWorkflowStream(agent, request, userId, outputStream);
+        }
+        AiChatRequest aiRequest = buildAiChatRequest(agent, request, userId);
         return outputStream -> relayStream(aiRequest, request, userId, outputStream);
     }
 
@@ -132,6 +150,58 @@ public class ConversationServiceImpl implements ConversationService {
                 log.error("SSE 透传失败", e);
             }
         }
+    }
+
+    /**
+     * 工作流模式 SSE 透传：同步运行工作流 → 答案按块输出 delta → done 事件。
+     * 落库失败不影响已输出的回答（与流式链路一致）；执行失败转为 error 事件。
+     */
+    private void relayWorkflowStream(Agent agent, ChatRequest request, Long userId,
+                                     OutputStream outputStream) {
+        try {
+            WorkflowRunVO run = workflowService.runForAgent(
+                    loadAgentWorkflow(agent), agent.getId(), request.getMessage(), userId);
+            String answer = run.getOutput() == null ? "" : run.getOutput();
+            recordStreamResult(request, userId, toAiResponse(answer));
+            autoNameSession(request, userId);
+            int chunkSize = 16;
+            for (int i = 0; i < answer.length(); i += chunkSize) {
+                Map<String, Object> delta = new HashMap<>();
+                delta.put("type", "delta");
+                delta.put("content", answer.substring(i, Math.min(i + chunkSize, answer.length())));
+                writeSse(outputStream, delta);
+            }
+            Map<String, Object> done = new HashMap<>();
+            done.put("type", "done");
+            done.put("answer", answer);
+            done.put("sources", List.of());
+            done.put("toolCalls", List.of());
+            writeSse(outputStream, done);
+        } catch (Exception e) {
+            log.error("工作流对话失败: agentId={}, userId={}", agent.getId(), userId, e);
+            try {
+                writeErrorEvent(outputStream, new BusinessException(ResultCode.LLM_ERROR,
+                        "工作流执行失败: " + e.getMessage()));
+            } catch (IOException io) {
+                log.debug("工作流 SSE 错误事件写入失败: {}", io.getMessage());
+            }
+        }
+    }
+
+    private AiChatResponse toAiResponse(String answer) {
+        AiChatResponse response = new AiChatResponse();
+        response.setAnswer(answer);
+        response.setSources(List.of());
+        response.setToolCalls(List.of());
+        return response;
+    }
+
+    /** 序列化事件为 SSE data 帧（消息经 Jackson 转义，保证 JSON 合法） */
+    private void writeSse(OutputStream outputStream, Map<String, Object> event) throws IOException {
+        outputStream.write("data: ".getBytes(StandardCharsets.UTF_8));
+        outputStream.write(objectMapper.writeValueAsBytes(event));
+        outputStream.write("\n\n".getBytes(StandardCharsets.UTF_8));
+        outputStream.flush();
     }
 
     /**
@@ -215,13 +285,29 @@ public class ConversationServiceImpl implements ConversationService {
         }
     }
 
-    /** 加载 Agent 校验 + 组装最近历史 + 工具配置快照，构造 AI 请求（同步/流式共用） */
-    private AiChatRequest buildAiChatRequest(ChatRequest request, Long userId) {
-        Agent agent = agentMapper.selectById(request.getAgentId());
+    private Agent loadAgentOrThrow(Long agentId) {
+        Agent agent = agentMapper.selectById(agentId);
         if (agent == null) {
             throw new BusinessException(ResultCode.RESOURCE_NOT_FOUND, "智能体不存在");
         }
+        return agent;
+    }
 
+    /** 加载 Agent 绑定的工作流（校验归属：必须是创建者本人名下） */
+    private Workflow loadAgentWorkflow(Agent agent) {
+        return workflowService.getOwned(agent.getWorkflowId(), agent.getCreatorId());
+    }
+
+    private ChatVO toChatVO(AiChatResponse aiResponse) {
+        return ChatVO.builder()
+                .answer(aiResponse.getAnswer())
+                .sources(aiResponse.getSources() == null ? List.of() : aiResponse.getSources())
+                .toolCalls(aiResponse.getToolCalls() == null ? List.of() : aiResponse.getToolCalls())
+                .build();
+    }
+
+    /** 加载 Agent 校验 + 组装最近历史 + 工具配置快照，构造 AI 请求（同步/流式共用） */
+    private AiChatRequest buildAiChatRequest(Agent agent, ChatRequest request, Long userId) {
         // 1. 组装最近历史（按会话隔离；倒序取最近 N 轮后反转为正序）
         List<Conversation> recent = conversationMapper.selectList(
                 new LambdaQueryWrapper<Conversation>()

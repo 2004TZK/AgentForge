@@ -1,4 +1,4 @@
-package com.agentforge.agent.entity;
+package com.agentforge.workflow.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -6,42 +6,29 @@ import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 智能体实体，对应表 `agent`。
+ * 工作流定义实体，对应表 `workflow`（节点明细在 workflow_node）。
  */
 @Data
-@TableName("`agent`")
-public class Agent {
+@TableName("`workflow`")
+public class Workflow {
 
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    /** 智能体名称 */
+    /** 工作流名称 */
     private String name;
 
     /** 描述 */
     private String description;
 
-    /** 系统提示词 */
-    private String systemPrompt;
-
-    /** 默认模型 */
-    private String modelName;
-
-    /** 采样温度 */
-    private BigDecimal temperature;
-
-    /** 运行模式（M3）：chat 对话模式 / workflow 工作流模式 */
-    private String mode;
-
-    /** 绑定的工作流 ID（mode=workflow 时生效） */
-    private Long workflowId;
-
     /** 创建者 ID */
     private Long creatorId;
+
+    /** 状态 ACTIVE / DISABLED */
+    private String status;
 
     @TableLogic
     private Integer deleted;

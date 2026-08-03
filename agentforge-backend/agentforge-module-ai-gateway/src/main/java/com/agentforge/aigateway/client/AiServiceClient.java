@@ -5,6 +5,8 @@ import com.agentforge.aigateway.dto.AiChatRequest;
 import com.agentforge.aigateway.dto.AiChatResponse;
 import com.agentforge.aigateway.dto.AiDeleteResponse;
 import com.agentforge.aigateway.dto.AiIngestResponse;
+import com.agentforge.aigateway.dto.AiWorkflowRunRequest;
+import com.agentforge.aigateway.dto.AiWorkflowRunResponse;
 import com.agentforge.common.core.ResultCode;
 import com.agentforge.common.exception.BusinessException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -135,6 +137,23 @@ public class AiServiceClient {
                     .body(AiIngestResponse.class);
         } catch (ResourceAccessException e) {
             throw mapConnectError(e, "知识库处理超时");
+        }
+    }
+
+    /** 工作流执行：POST /agent/workflow/run（定义 + 输入 → 节点级日志） */
+    public AiWorkflowRunResponse runWorkflow(AiWorkflowRunRequest request) {
+        try {
+            return restClient.post()
+                    .uri("/agent/workflow/run")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(request)
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError, (req, res) -> {
+                        throw mapAiError(res);
+                    })
+                    .body(AiWorkflowRunResponse.class);
+        } catch (ResourceAccessException e) {
+            throw mapConnectError(e, "工作流执行超时");
         }
     }
 

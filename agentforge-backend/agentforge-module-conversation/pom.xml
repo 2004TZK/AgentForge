@@ -32,6 +32,11 @@
             <groupId>com.agentforge</groupId>
             <artifactId>agentforge-module-agent</artifactId>
         </dependency>
+        <!-- M3：工作流模式 Agent 的对话触发执行 -->
+        <dependency>
+            <groupId>com.agentforge</groupId>
+            <artifactId>agentforge-module-workflow</artifactId>
+        </dependency>
         <dependency>
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-spring-boot3-starter</artifactId>

@@ -23,6 +23,10 @@ export interface AgentItem {
   description: string | null
   modelName: string
   temperature: number
+  /** M3：运行模式 chat / workflow */
+  mode: string
+  /** M3：绑定的工作流 ID（mode=workflow 时生效） */
+  workflowId: number | null
   creatorId: number
   createdTime: string
 }
@@ -41,4 +45,6 @@ export interface AgentPayload {
   modelName: string
   temperature: number
   tools: { toolName: string; toolConfig: Record<string, unknown>; enabled: boolean }[]
+  mode?: string
+  workflowId?: number | null
 }

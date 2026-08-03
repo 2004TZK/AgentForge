@@ -54,6 +54,24 @@ const router = createRouter({
       component: () => import('../views/file/FileManage.vue'),
       meta: { title: '文件管理' },
     },
+    {
+      path: '/workflows',
+      name: 'workflow-list',
+      component: () => import('../views/workflow/WorkflowList.vue'),
+      meta: { title: '工作流列表' },
+    },
+    {
+      path: '/workflows/new',
+      name: 'workflow-create',
+      component: () => import('../views/workflow/WorkflowEdit.vue'),
+      meta: { title: '新建工作流' },
+    },
+    {
+      path: '/workflows/:id/edit',
+      name: 'workflow-edit',
+      component: () => import('../views/workflow/WorkflowEdit.vue'),
+      meta: { title: '编辑工作流' },
+    },
   ],
 })
 
