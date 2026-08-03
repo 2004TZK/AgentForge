@@ -1,12 +1,12 @@
 <script setup lang="ts">
-/** 新建/编辑智能体：基础信息 + 工具配置（工具列表为简单 JSON 配置编辑） */
+/** 新建/编辑智能体：基础信息 + 工具配置（M3 起按 Schema 渲染配置表单） */
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '../../components/layout/AppLayout.vue'
-import { apiAgentDetail } from '../../api/agent'
+import { apiAgentDetail, apiToolsMeta } from '../../api/agent'
 import { useAgentStore } from '../../stores/agent'
 import { notifyError, notifySuccess } from '../../utils/notify'
-import type { AgentPayload, AgentTool } from '../../types/agent'
+import type { AgentPayload, AgentTool, ToolMeta } from '../../types/agent'
 
 const route = useRoute()
 const router = useRouter()
@@ -21,13 +21,41 @@ const systemPrompt = ref('')
 const modelName = ref('deepseek-chat')
 const temperature = ref(0.7)
 const tools = ref<AgentTool[]>([{ toolName: 'calculator', toolConfig: {}, enabled: true }])
+const toolMeta = ref<ToolMeta[]>([])
 const loading = ref(false)
 const saving = ref(false)
 
-const TOOL_OPTIONS = ['calculator', 'github']
+/** 工具选项（M3：由 /tools/meta 动态加载；加载失败时退回内置列表） */
+const toolOptions = computed(() =>
+  toolMeta.value.length ? toolMeta.value.map((t) => t.name) : ['calculator', 'github'],
+)
+
+function metaOf(toolName: string): ToolMeta | undefined {
+  return toolMeta.value.find((t) => t.name === toolName)
+}
+
+function configParamOf(toolName: string): string[] {
+  return Object.keys(metaOf(toolName)?.config ?? {})
+}
+
+/** 工具选择变化：按 Schema 初始化配置字段（保留已有值），再提交新工具名 */
+function onToolChange(tool: AgentTool, newName: string): void {
+  if (newName === tool.toolName) return
+  const defaults: Record<string, unknown> = {}
+  for (const param of configParamOf(newName)) {
+    defaults[param] = tool.toolConfig[param] ?? ''
+  }
+  tool.toolConfig = defaults
+  tool.toolName = newName
+}
 
 function addTool(): void {
-  tools.value.push({ toolName: 'calculator', toolConfig: {}, enabled: true })
+  const first = toolOptions.value[0] ?? 'calculator'
+  const defaults: Record<string, unknown> = {}
+  for (const param of configParamOf(first)) {
+    defaults[param] = ''
+  }
+  tools.value.push({ toolName: first, toolConfig: defaults, enabled: true })
 }
 
 function removeTool(index: number): void {
@@ -49,6 +77,16 @@ async function loadDetail(): Promise<void> {
     loading.value = false
   }
 }
+
+onMounted(async () => {
+  // 加载工具元数据（失败不阻断：退回内置工具列表）
+  try {
+    toolMeta.value = await apiToolsMeta()
+  } catch {
+    /* 元数据不可用时退回内置列表 */
+  }
+  await loadDetail()
+})
 
 async function onSubmit(): Promise<void> {
   if (!name.value.trim()) {
@@ -87,8 +125,6 @@ async function onSubmit(): Promise<void> {
     saving.value = false
   }
 }
-
-onMounted(loadDetail)
 </script>
 
 <template>
@@ -133,16 +169,41 @@ onMounted(loadDetail)
         </div>
 
         <div class="form-item">
-          <label>工具配置（Phase 4 启用工具调用）</label>
-          <div v-for="(tool, index) in tools" :key="index" class="tool-row">
-            <select v-model="tool.toolName" class="select tool-name">
-              <option v-for="opt in TOOL_OPTIONS" :key="opt" :value="opt">{{ opt }}</option>
-            </select>
-            <label class="tool-enabled">
-              <input v-model="tool.enabled" type="checkbox" />
-              启用
-            </label>
-            <button class="btn btn-danger btn-sm" @click="removeTool(index)">移除</button>
+          <label>工具配置（M3：LLM 依据 Schema 自主调用）</label>
+          <div v-for="(tool, index) in tools" :key="index" class="tool-card">
+            <div class="tool-row">
+              <select
+                class="select tool-name"
+                :value="tool.toolName"
+                @change="onToolChange(tool, ($event.target as HTMLSelectElement).value)"
+              >
+                <option v-for="opt in toolOptions" :key="opt" :value="opt">{{ opt }}</option>
+              </select>
+              <span v-if="metaOf(tool.toolName)?.description" class="tool-desc muted">
+                {{ metaOf(tool.toolName)?.description }}
+              </span>
+              <label class="tool-enabled">
+                <input v-model="tool.enabled" type="checkbox" />
+                启用
+              </label>
+              <button class="btn btn-danger btn-sm" @click="removeTool(index)">移除</button>
+            </div>
+            <div v-if="configParamOf(tool.toolName).length" class="tool-config">
+              <div v-for="param in configParamOf(tool.toolName)" :key="param" class="form-item">
+                <label class="tool-config-label">
+                  {{ param }}
+                  <span v-if="metaOf(tool.toolName)?.config[param]?.description" class="muted">
+                    — {{ metaOf(tool.toolName)?.config[param]?.description }}
+                  </span>
+                </label>
+                <input
+                  v-model="(tool.toolConfig[param] as string)"
+                  class="input"
+                  :type="/key|token/i.test(param) ? 'password' : 'text'"
+                  :placeholder="metaOf(tool.toolName)?.config[param]?.description"
+                />
+              </div>
+            </div>
           </div>
           <button class="btn btn-secondary btn-sm" @click="addTool">+ 添加工具</button>
         </div>
@@ -171,21 +232,50 @@ onMounted(loadDetail)
   flex: 1;
 }
 
+.tool-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+
 .tool-row {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 8px;
 }
 
 .tool-name {
   width: 160px;
 }
 
+.tool-desc {
+  flex: 1;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .tool-enabled {
   display: flex;
   align-items: center;
   gap: 4px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.tool-config {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--color-border);
+}
+
+.tool-config .form-item {
+  margin-bottom: 8px;
+}
+
+.tool-config-label {
   font-size: 13px;
 }
 

@@ -99,9 +99,17 @@ export const useChatStore = defineStore('chat', () => {
           onDelta: (delta) => {
             assistantMessage.content += delta
           },
+          onTool: (event) => {
+            // M3：工具执行事件实时累积（如 'calculator({...}) → 4'）
+            if (!assistantMessage.toolCalls) assistantMessage.toolCalls = []
+            assistantMessage.toolCalls.push(
+              `${event.name}(${JSON.stringify(event.arguments)}) → ${event.result.slice(0, 120)}`,
+            )
+          },
           onDone: (result) => {
             assistantMessage.content = result.answer
             assistantMessage.sources = result.sources
+            assistantMessage.toolCalls = result.toolCalls
             assistantMessage.status = 'done'
           },
           onError: (message) => {

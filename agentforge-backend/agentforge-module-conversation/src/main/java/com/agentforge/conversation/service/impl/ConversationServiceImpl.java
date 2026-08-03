@@ -238,13 +238,19 @@ public class ConversationServiceImpl implements ConversationService {
             history.add(new ChatHistoryItem("assistant", c.getAssistantMessage()));
         }
 
-        // 2. 加载 Agent 工具配置快照
-        List<String> tools = agentToolMapper.selectList(
-                        new LambdaQueryWrapper<AgentTool>().eq(AgentTool::getAgentId, agent.getId()))
-                .stream()
+        // 2. 加载 Agent 工具配置快照（M3：含工具配置 {tool_name: config} 透传 AI 服务）
+        List<AgentTool> agentTools = agentToolMapper.selectList(
+                new LambdaQueryWrapper<AgentTool>().eq(AgentTool::getAgentId, agent.getId()));
+        List<String> tools = agentTools.stream()
                 .filter(t -> Boolean.TRUE.equals(t.getEnabled()))
                 .map(AgentTool::getToolName)
                 .toList();
+        Map<String, Map<String, Object>> toolConfigs = new HashMap<>();
+        for (AgentTool t : agentTools) {
+            if (t.getToolConfig() != null && !t.getToolConfig().isEmpty()) {
+                toolConfigs.put(t.getToolName(), t.getToolConfig());
+            }
+        }
 
         return AiChatRequest.builder()
                 .agentId(agent.getId())
@@ -254,6 +260,8 @@ public class ConversationServiceImpl implements ConversationService {
                 .modelName(agent.getModelName())
                 .temperature(agent.getTemperature())
                 .tools(tools)
+                .userId(userId)
+                .toolConfigs(toolConfigs)
                 .build();
     }
 

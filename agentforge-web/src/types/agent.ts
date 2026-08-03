@@ -1,4 +1,15 @@
 /** 智能体相关类型 */
+
+/** 工具配置项 Schema（M3：后端透传 AI 服务 /tools/meta，前端按此渲染配置表单） */
+export interface ToolMeta {
+  name: string
+  description: string
+  /** LLM 工具调用参数 {参数名: {type, description, required?}} */
+  parameters: Record<string, { type: string; description?: string; required?: boolean }>
+  /** 智能体级配置参数 {参数名: {type, description}}（存 tool_config） */
+  config: Record<string, { type: string; description?: string }>
+}
+
 export interface AgentTool {
   toolName: string
   toolConfig: Record<string, unknown>

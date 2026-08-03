@@ -18,6 +18,7 @@ import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 
@@ -29,6 +30,7 @@ import java.net.URI;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -136,6 +138,22 @@ public class AiServiceClient {
         }
     }
 
+    /** 工具元数据：GET /agent/tools/meta（前端按 Schema 渲染工具配置表单） */
+    public List<Map<String, Object>> getToolMeta() {
+        try {
+            return restClient.get()
+                    .uri("/agent/tools/meta")
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError, (req, res) -> {
+                        throw mapAiError(res);
+                    })
+                    .body(new ParameterizedTypeReference<List<Map<String, Object>>>() {
+                    });
+        } catch (ResourceAccessException e) {
+            throw mapConnectError(e);
+        }
+    }
+
     /** 删除文档向量：DELETE /rag/file */
     public AiDeleteResponse deleteFile(Long agentId, String fileName) {
         try {
@@ -232,6 +250,8 @@ public class AiServiceClient {
         body.put("modelName", request.getModelName());
         body.put("temperature", request.getTemperature());
         body.put("tools", request.getTools());
+        body.put("userId", request.getUserId());
+        body.put("toolConfigs", request.getToolConfigs());
         return body;
     }
 

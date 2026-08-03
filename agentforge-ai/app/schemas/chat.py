@@ -1,5 +1,5 @@
 """对话接口的请求/响应模型（与后端 ai-gateway 的 AiChatRequest/AiChatResponse 对齐）。"""
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -20,6 +20,9 @@ class ChatRequest(BaseModel):
     modelName: Optional[str] = None
     temperature: Optional[float] = None
     tools: List[str] = Field(default_factory=list)
+    # M3：用户 ID（记忆按用户隔离）与智能体工具配置（{tool_name: config}）
+    userId: Optional[int] = None
+    toolConfigs: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
 
 
 class SourceItem(BaseModel):
