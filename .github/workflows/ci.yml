@@ -60,6 +60,9 @@ jobs:
       - name: Install dependencies
         working-directory: agentforge-web
         run: npm ci --no-audit --no-fund
+      - name: Smoke tests
+        working-directory: agentforge-web
+        run: npm test
       - name: Build
         working-directory: agentforge-web
         run: npm run build

@@ -2,6 +2,7 @@ package com.agentforge.file.controller;
 
 import com.agentforge.common.core.PageResult;
 import com.agentforge.common.core.Result;
+import com.agentforge.framework.context.UserContext;
 import com.agentforge.file.service.FileService;
 import com.agentforge.file.vo.DocumentVO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -51,13 +52,13 @@ public class FileController {
     @Operation(summary = "删除文档（元数据 + 磁盘文件 + Qdrant 向量）")
     @DeleteMapping("/{id}")
     public Result<Void> delete(@PathVariable Long id) {
-        fileService.delete(id);
+        fileService.delete(id, UserContext.getUserId());
         return Result.success();
     }
 
     @Operation(summary = "重试 RAG 入库（PENDING/FAILED 状态）")
     @PostMapping("/{id}/retry")
     public Result<DocumentVO> retry(@PathVariable Long id) {
-        return Result.success(fileService.retryIngest(id));
+        return Result.success(fileService.retryIngest(id, UserContext.getUserId()));
     }
 }

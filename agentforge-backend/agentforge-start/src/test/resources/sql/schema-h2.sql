@@ -66,8 +66,10 @@ CREATE TABLE IF NOT EXISTS `model_provider` (
   `updated_time`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 幂等插入内置 Provider（多 Spring context 共享内存库时避免重复）
 INSERT INTO `model_provider` (`name`, `provider_type`, `base_url`, `models`, `creator_id`)
-VALUES ('本地 Ollama', 'ollama', 'http://ollama:11434', '["qwen3.5:0.8b","bge-m3"]', 0);
+SELECT '本地 Ollama', 'ollama', 'http://ollama:11434', '["qwen3.5:0.8b","bge-m3"]', 0
+WHERE NOT EXISTS (SELECT 1 FROM `model_provider` WHERE `creator_id` = 0);
 CREATE TABLE IF NOT EXISTS `document` (
   `id`           BIGINT       NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `agent_id`     BIGINT       NOT NULL,

@@ -212,11 +212,13 @@ def delete_file(agent_id: int, file_name: str) -> int:
         client.get_collection(name)
     except Exception:  # noqa: BLE001 - collection 不存在无需删除
         return 0
-    result = client.delete(collection_name=name,
-                           points_selector={"filter": {"must": [
-                               {"key": "agentId", "match": {"value": agent_id}},
-                               {"key": "file", "match": {"value": file_name}},
-                           ]}})
+    # 注意：points_selector 必须传 Filter 对象（新版 qdrant-client 不接受原始 dict）
+    from qdrant_client.http import models  # 懒加载，与 _get_qdrant 风格一致
+    selector = models.Filter(must=[
+        models.FieldCondition(key="agentId", match=models.MatchValue(value=agent_id)),
+        models.FieldCondition(key="file", match=models.MatchValue(value=file_name)),
+    ])
+    result = client.delete(collection_name=name, points_selector=selector, wait=True)
     return getattr(result, "count", 0)
 
 

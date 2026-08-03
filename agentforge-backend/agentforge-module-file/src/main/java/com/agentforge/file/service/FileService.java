@@ -22,8 +22,8 @@ public interface FileService {
      * 删除文档：删除 Qdrant 向量 → 逻辑删除元数据 → 删除磁盘文件。
      * AI 删除失败仅记录日志，不阻断元数据删除。
      */
-    void delete(Long documentId);
+    void delete(Long documentId, Long operatorId);
 
     /** 重试 RAG 入库（PENDING/FAILED 状态），幂等操作支持重试 */
-    DocumentVO retryIngest(Long documentId);
+    DocumentVO retryIngest(Long documentId, Long operatorId);
 }
