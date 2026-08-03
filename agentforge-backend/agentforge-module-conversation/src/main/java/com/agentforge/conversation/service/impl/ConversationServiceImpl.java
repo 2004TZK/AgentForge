@@ -20,6 +20,8 @@ import com.agentforge.conversation.mapper.SessionMapper;
 import com.agentforge.conversation.service.ConversationService;
 import com.agentforge.conversation.vo.ChatVO;
 import com.agentforge.conversation.vo.ConversationVO;
+import com.agentforge.model.entity.ModelProvider;
+import com.agentforge.model.service.ModelProviderService;
 import com.agentforge.workflow.entity.Workflow;
 import com.agentforge.workflow.service.WorkflowService;
 import com.agentforge.workflow.vo.WorkflowRunVO;
@@ -77,6 +79,7 @@ public class ConversationServiceImpl implements ConversationService {
     private final AiServiceClient aiServiceClient;
     private final ObjectMapper objectMapper;
     private final WorkflowService workflowService;
+    private final ModelProviderService modelProviderService;
 
     @Override
     @Transactional
@@ -347,12 +350,25 @@ public class ConversationServiceImpl implements ConversationService {
             }
         }
 
+        // 3. 模型 Provider（M4：Agent 绑定 provider 时透传 {type, baseUrl, apiKey} 给 AI 服务）
+        Map<String, Object> provider = null;
+        ModelProvider providerEntity = modelProviderService.getEnabledOrNull(agent.getProviderId());
+        if (providerEntity != null) {
+            provider = new HashMap<>();
+            provider.put("type", providerEntity.getProviderType());
+            provider.put("baseUrl", providerEntity.getBaseUrl());
+            if (providerEntity.getApiKey() != null && !providerEntity.getApiKey().isBlank()) {
+                provider.put("apiKey", providerEntity.getApiKey());
+            }
+        }
+
         return AiChatRequest.builder()
                 .agentId(agent.getId())
                 .message(request.getMessage())
                 .history(history)
                 .systemPrompt(agent.getSystemPrompt())
                 .modelName(agent.getModelName())
+                .provider(provider)
                 .temperature(agent.getTemperature())
                 .tools(tools)
                 .userId(userId)

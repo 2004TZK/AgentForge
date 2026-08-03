@@ -22,11 +22,24 @@ _MOCK_CHUNK_SIZE = 12
 
 
 class LLMClient:
-    def __init__(self) -> None:
-        self.base_url = settings.llm_base_url.rstrip("/")
-        self.api_key = settings.llm_api_key
+    def __init__(self, provider: dict | None = None) -> None:
+        """M4 多模型配置：provider 为请求级覆盖 {type, baseUrl, apiKey}，
+        缺省回落环境变量（保持本地开发与旧调用兼容）。"""
+        p = provider or {}
+        self.base_url = (p.get("baseUrl") or settings.llm_base_url).rstrip("/")
+        self.api_key = p.get("apiKey") if p.get("apiKey") else settings.llm_api_key
         self.model = settings.llm_model
         self.timeout = settings.llm_timeout_seconds
+        # 请求级显式指定的 Provider 类型（ollama/openai）；未指定时动态读环境变量
+        self._provider_type = p.get("type") or None
+
+    @property
+    def local(self) -> bool:
+        """本地（Ollama）走原生 /api/chat（think 可控）；远端走 OpenAI 兼容。
+        请求级 Provider 显式指定时以它为准；否则动态读环境变量（便于测试 monkeypatch）。"""
+        if self._provider_type:
+            return self._provider_type == "ollama"
+        return settings.llm_local
 
     @property
     def available(self) -> bool:
@@ -34,13 +47,13 @@ class LLMClient:
         容器内 base_url 可能是服务名（如 http://ollama:11434/v1），故以 LLM_LOCAL 显式标记本地部署。"""
         if self.api_key:
             return True
-        return settings.llm_local and bool(self.base_url)
+        return self.local and bool(self.base_url)
 
     def chat(self, messages: list[dict], temperature: float = 0.7) -> str:
         """同步调用 chat/completions，返回回答文本。"""
         if not self.available:
             return self.mock_chat(messages)
-        if settings.llm_local:
+        if self.local:
             return self._chat_native(messages, temperature)
         try:
             resp = httpx.post(
@@ -102,7 +115,7 @@ class LLMClient:
                 await asyncio.sleep(0.02)
                 yield text[i : i + _MOCK_CHUNK_SIZE]
             return
-        if settings.llm_local:
+        if self.local:
             async for delta in self._chat_stream_native(messages, temperature):
                 yield delta
             return
@@ -185,7 +198,7 @@ class LLMClient:
             return {"content": self.chat(messages, temperature), "tool_calls": []}
         if not self.available:
             return {"content": self.mock_chat(messages), "tool_calls": []}
-        if settings.llm_local:
+        if self.local:
             return self._chat_native_tools(messages, tools, temperature)
         return self._chat_openai_tools(messages, tools, temperature)
 
@@ -210,7 +223,7 @@ class LLMClient:
                 yield {"type": "delta", "content": text[i : i + _MOCK_CHUNK_SIZE]}
             yield {"type": "done", "content": text, "tool_calls": []}
             return
-        if settings.llm_local:
+        if self.local:
             async for event in self._stream_native_tools(messages, tools, temperature):
                 yield event
             return
@@ -396,7 +409,7 @@ class LLMClient:
         payload = {"model": self.model, "messages": messages, "temperature": temperature}
         # Ollama 本地推理模型（qwen3.5 等）默认开启思考模式会先产出大量推理 token，
         # 聊天场景极慢；仅本地模型传递 think 参数，远端 OpenAI 兼容服务不发送
-        if settings.llm_local:
+        if self.local:
             payload["think"] = settings.llm_think
         return payload
 

@@ -70,6 +70,7 @@ public class AgentServiceImpl implements AgentService {
         agent.setDescription(request.getDescription());
         agent.setSystemPrompt(request.getSystemPrompt());
         agent.setModelName(request.getModelName());
+        agent.setProviderId(request.getProviderId());
         agent.setTemperature(request.getTemperature());
         agent.setMode(request.getMode());
         agent.setWorkflowId(request.getWorkflowId());
@@ -92,6 +93,7 @@ public class AgentServiceImpl implements AgentService {
         agent.setDescription(request.getDescription());
         agent.setSystemPrompt(request.getSystemPrompt());
         agent.setModelName(request.getModelName());
+        agent.setProviderId(request.getProviderId());
         agent.setTemperature(request.getTemperature());
         agent.setMode(request.getMode());
         agent.setWorkflowId(request.getWorkflowId());
@@ -187,6 +189,7 @@ public class AgentServiceImpl implements AgentService {
                 .name(agent.getName())
                 .description(agent.getDescription())
                 .modelName(agent.getModelName())
+                .providerId(agent.getProviderId())
                 .temperature(agent.getTemperature())
                 .mode(agent.getMode())
                 .workflowId(agent.getWorkflowId())
@@ -214,6 +217,7 @@ public class AgentServiceImpl implements AgentService {
                 .description(agent.getDescription())
                 .systemPrompt(agent.getSystemPrompt())
                 .modelName(agent.getModelName())
+                .providerId(agent.getProviderId())
                 .temperature(agent.getTemperature())
                 .mode(agent.getMode())
                 .workflowId(agent.getWorkflowId())

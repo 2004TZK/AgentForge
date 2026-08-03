@@ -47,6 +47,8 @@ public abstract class IntegrationTestBase {
         jdbcTemplate.execute("DELETE FROM document");
         jdbcTemplate.execute("DELETE FROM agent_tool");
         jdbcTemplate.execute("DELETE FROM agent");
+        // 保留系统内置 Provider（creator_id=0），清理测试创建的用户级 Provider
+        jdbcTemplate.execute("DELETE FROM model_provider WHERE creator_id <> 0");
         jdbcTemplate.execute("DELETE FROM `user`");
     }
 

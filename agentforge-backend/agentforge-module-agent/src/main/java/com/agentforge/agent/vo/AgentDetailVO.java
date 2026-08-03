@@ -24,6 +24,9 @@ public class AgentDetailVO {
 
     private String modelName;
 
+    /** 模型 Provider ID（M4：NULL=内置 Ollama） */
+    private Long providerId;
+
     private BigDecimal temperature;
 
     /** 运行模式（M3）：chat / workflow */

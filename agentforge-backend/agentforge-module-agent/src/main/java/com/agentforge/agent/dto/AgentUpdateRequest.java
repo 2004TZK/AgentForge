@@ -29,6 +29,9 @@ public class AgentUpdateRequest {
 
     private String modelName = "deepseek-chat";
 
+    /** 模型 Provider ID（M4：NULL=内置 Ollama） */
+    private Long providerId;
+
     @DecimalMin(value = "0", message = "temperature 需在 0-1 之间")
     @DecimalMax(value = "1", message = "temperature 需在 0-1 之间")
     private BigDecimal temperature = new BigDecimal("0.70");

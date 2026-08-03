@@ -31,6 +31,9 @@ public class Agent {
     /** 默认模型 */
     private String modelName;
 
+    /** 模型 Provider ID（M4：NULL=内置 Ollama） */
+    private Long providerId;
+
     /** 采样温度 */
     private BigDecimal temperature;
 

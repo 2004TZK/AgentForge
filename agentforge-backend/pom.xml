@@ -27,6 +27,7 @@
         <module>agentforge-module-conversation</module>
         <module>agentforge-module-file</module>
         <module>agentforge-module-workflow</module>
+        <module>agentforge-module-model</module>
         <module>agentforge-start</module>
     </modules>
 
@@ -80,6 +81,11 @@
             <dependency>
                 <groupId>com.agentforge</groupId>
                 <artifactId>agentforge-module-workflow</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.agentforge</groupId>
+                <artifactId>agentforge-module-model</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

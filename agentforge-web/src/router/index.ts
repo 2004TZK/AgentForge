@@ -72,6 +72,12 @@ const router = createRouter({
       component: () => import('../views/workflow/WorkflowEdit.vue'),
       meta: { title: '编辑工作流' },
     },
+    {
+      path: '/models',
+      name: 'model-provider-list',
+      component: () => import('../views/model/ModelProviderList.vue'),
+      meta: { title: '模型 Provider' },
+    },
   ],
 })
 

@@ -15,7 +15,7 @@ from typing import TypedDict
 
 from app.core.config import settings
 from app.services import memory, planner, rag_service
-from app.services.llm import llm_client
+from app.services.llm import LLMClient, llm_client
 from app.tools import registry as tool_registry
 
 logger = logging.getLogger(__name__)
@@ -28,6 +28,7 @@ class ChatState(TypedDict):
     """状态图节点间传递的状态。"""
     agent_id: int
     user_id: int | None
+    provider: dict | None          # M4：请求级模型 Provider 覆盖 {type, baseUrl, apiKey}
     system_prompt: str
     messages: list           # [{"role": ..., "content": ...}]
     message: str
@@ -46,13 +47,21 @@ class ChatState(TypedDict):
 
 # ---------------- ReAct 图节点 ----------------
 
+def _client(state: ChatState) -> LLMClient:
+    """请求级 Provider 覆盖（M4）：Agent 绑定 Provider 时按其 base_url/api_key 调用，
+    否则回落模块级默认客户端（环境变量配置）。"""
+    provider = state.get("provider")
+    return llm_client if not provider else LLMClient(provider)
+
+
 def _call_llm_node(state: ChatState) -> ChatState:
     """LLM 节点：携带工具 Schema 决策（无工具时退化为普通回答）。"""
+    client = _client(state)
     if not state["tool_schemas"]:
-        content = llm_client.chat(state["messages"], temperature=state["temperature"])
+        content = client.chat(state["messages"], temperature=state["temperature"])
         return {**state, "llm_content": content, "pending_tool_calls": []}
-    result = llm_client.chat_with_tools(state["messages"], state["tool_schemas"],
-                                        temperature=state["temperature"])
+    result = client.chat_with_tools(state["messages"], state["tool_schemas"],
+                                    temperature=state["temperature"])
     return {**state, "llm_content": result["content"],
             "pending_tool_calls": result["tool_calls"]}
 
@@ -151,7 +160,7 @@ def _rule_fallback(state: ChatState) -> ChatState:
     last["content"] = f"{last['content']}\n\n[附加上下文]\n" + "\n".join(notes)
     messages[-1] = last
     state["messages"] = messages
-    state["answer"] = llm_client.chat(messages, temperature=state["temperature"])
+    state["answer"] = _client(state).chat(messages, temperature=state["temperature"])
     return state
 
 
@@ -257,7 +266,8 @@ def _format_tool_calls(tool_calls: list[dict]) -> list[str]:
 def run_chat(*, agent_id: int, message: str, history: list[dict] | None = None,
              system_prompt: str | None = None, model_name: str | None = None,
              temperature: float | None = 0.7, tools: list[str] | None = None,
-             user_id: int | None = None, tool_configs: dict | None = None) -> dict:
+             user_id: int | None = None, tool_configs: dict | None = None,
+             provider: dict | None = None) -> dict:
     """同步对话入口：ReAct 工具循环 → 规则兜底 → 记忆写入，返回 {answer, sources, toolCalls}。"""
     messages, _, sources = prepare_chat(
         agent_id=agent_id, message=message, history=history,
@@ -266,6 +276,7 @@ def run_chat(*, agent_id: int, message: str, history: list[dict] | None = None,
     state: ChatState = {
         "agent_id": agent_id,
         "user_id": user_id,
+        "provider": provider,
         "system_prompt": system_prompt or "",
         "messages": messages,
         "message": message,
@@ -289,8 +300,8 @@ def run_chat(*, agent_id: int, message: str, history: list[dict] | None = None,
         result = _rule_fallback(result)
     # 防呆：工具轮次耗尽后 LLM 仍无文本输出 → 不带工具强制总结一次
     if not result["answer"]:
-        result["answer"] = llm_client.chat(result["messages"],
-                                           temperature=result["temperature"])
+        result["answer"] = _client(result).chat(result["messages"],
+                                                temperature=result["temperature"])
 
     answer = result["answer"]
     if user_id is not None and answer:
@@ -305,7 +316,8 @@ def run_chat(*, agent_id: int, message: str, history: list[dict] | None = None,
 async def stream_chat(*, agent_id: int, message: str, history: list[dict] | None = None,
                       system_prompt: str | None = None, model_name: str | None = None,
                       temperature: float | None = 0.7, tools: list[str] | None = None,
-                      user_id: int | None = None, tool_configs: dict | None = None):
+                      user_id: int | None = None, tool_configs: dict | None = None,
+                      provider: dict | None = None):
     """流式对话入口：ReAct 循环流式执行，产出事件字典。
 
     事件：{"type": "delta", "content"}（逐块）/
@@ -321,13 +333,14 @@ async def stream_chat(*, agent_id: int, message: str, history: list[dict] | None
     tool_calls: list[dict] = []
     temp = temperature if temperature is not None else 0.7
     full = ""
+    client = LLMClient(provider) if provider else llm_client
 
     # ReAct 流式循环：前 MAX_TOOL_ROUNDS 轮带工具，之后强制无工具总结（保证终止）
     round_no = 0
     while True:
         with_tools = bool(tool_schemas) and round_no < MAX_TOOL_ROUNDS
         holder = {"content": "", "tool_calls": []}
-        async for event in _llm_round(messages, with_tools, tool_schemas, temp, holder):
+        async for event in _llm_round(client, messages, with_tools, tool_schemas, temp, holder):
             if event["type"] == "delta":
                 full += event["content"]
                 yield {"type": "delta", "content": event["content"]}
@@ -366,7 +379,7 @@ async def stream_chat(*, agent_id: int, message: str, history: list[dict] | None
             last = dict(messages[-1])
             last["content"] = f"{last['content']}\n\n[附加上下文]\n" + "\n".join(fallback_notes)
             messages[-1] = last
-            async for delta in llm_client.chat_stream(messages, temperature=temp):
+            async for delta in client.chat_stream(messages, temperature=temp):
                 full += delta
                 yield {"type": "delta", "content": delta}
 
@@ -376,20 +389,20 @@ async def stream_chat(*, agent_id: int, message: str, history: list[dict] | None
            "toolCalls": _format_tool_calls(tool_calls)}
 
 
-async def _llm_round(messages: list[dict], with_tools: bool, tool_schemas: list[dict],
-                     temperature: float, holder: dict):
+async def _llm_round(client: LLMClient, messages: list[dict], with_tools: bool,
+                     tool_schemas: list[dict], temperature: float, holder: dict):
     """一轮 LLM 调用：产出 delta 事件；结束后将 {content, tool_calls} 写入 holder。"""
     content = ""
     pending: list[dict] = []
     if with_tools:
-        async for event in llm_client.chat_stream_with_tools(messages, tool_schemas, temperature):
+        async for event in client.chat_stream_with_tools(messages, tool_schemas, temperature):
             if event["type"] == "delta":
                 content += event["content"]
                 yield event
             else:  # done（工具轮结束，LLM 内部汇总事件不透传客户端）
                 pending = event["tool_calls"]
     else:
-        async for delta in llm_client.chat_stream(messages, temperature):
+        async for delta in client.chat_stream(messages, temperature):
             content += delta
             yield {"type": "delta", "content": delta}
     holder["content"] = content

@@ -23,6 +23,8 @@ class ChatRequest(BaseModel):
     # M3：用户 ID（记忆按用户隔离）与智能体工具配置（{tool_name: config}）
     userId: Optional[int] = None
     toolConfigs: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
+    # M4：模型 Provider（{type, baseUrl, apiKey}；缺省回落环境变量）
+    provider: Optional[Dict[str, Any]] = None
 
 
 class SourceItem(BaseModel):

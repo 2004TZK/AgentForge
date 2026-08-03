@@ -30,6 +30,9 @@ public class AgentCreateRequest {
     /** 默认模型，缺省 deepseek-chat */
     private String modelName = "deepseek-chat";
 
+    /** 模型 Provider ID（M4：NULL=内置 Ollama） */
+    private Long providerId;
+
     /** 采样温度 0-1，缺省 0.70 */
     @DecimalMin(value = "0", message = "temperature 需在 0-1 之间")
     @DecimalMax(value = "1", message = "temperature 需在 0-1 之间")
