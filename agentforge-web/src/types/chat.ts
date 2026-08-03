@@ -3,11 +3,18 @@
 /** 助手消息状态：streaming 打字机中 / done 完成 / error 失败 */
 export type ChatMessageStatus = 'streaming' | 'done' | 'error'
 
+/** 知识库引用来源（M2 起含片段，可点击查看） */
+export interface SourceItem {
+  file: string
+  snippet: string
+  score: number
+}
+
 export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
   /** 引用来源（助手消息） */
-  sources?: string[]
+  sources?: SourceItem[]
   /** 助手消息流式/失败状态（用户消息与历史消息无该字段） */
   status?: ChatMessageStatus
   /** 失败原因（status=error 时展示） */
@@ -26,8 +33,17 @@ export interface ConversationItem {
 /** 发送消息返回 */
 export interface ChatResult {
   answer: string
-  sources: string[]
+  sources: SourceItem[]
   toolCalls: string[]
+}
+
+/** 会话（M2 多会话） */
+export interface SessionItem {
+  id: number
+  agentId: number
+  name: string
+  createdTime: string
+  updatedTime: string
 }
 
 /** 文档 */

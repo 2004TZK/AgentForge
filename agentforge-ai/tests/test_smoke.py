@@ -23,7 +23,10 @@ def test_chat_requires_token():
     assert resp.status_code == 401
 
 
-def test_chat_mock_mode():
+def test_chat_mock_mode(monkeypatch):
+    # 默认配置已切本地 Ollama（localhost 视为可用）；Mock 测试需指向非本地地址
+    from app.services.llm import llm_client
+    monkeypatch.setattr(llm_client, "base_url", "https://api.example.com")
     resp = client.post("/agent/chat",
                        json={"agentId": 1, "message": "你好"},
                        headers={"X-Internal-Token": TOKEN})

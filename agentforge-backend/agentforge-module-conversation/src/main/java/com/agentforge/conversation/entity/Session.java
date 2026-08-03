@@ -9,12 +9,12 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- * 对话记录实体，对应表 `conversation`（一问一答一行）。
- * M2 起按会话隔离：sessionId 为空表示旧版遗留数据。
+ * 会话实体，对应表 `session`（M2 多会话）。
+ * 同一 Agent 下用户可建多个会话，对话历史按会话隔离。
  */
 @Data
-@TableName("`conversation`")
-public class Conversation {
+@TableName("`session`")
+public class Session {
 
     @TableId(type = IdType.AUTO)
     private Long id;
@@ -25,14 +25,8 @@ public class Conversation {
     /** 用户 ID */
     private Long userId;
 
-    /** 会话 ID（NULL=旧版数据，不参与会话隔离） */
-    private Long sessionId;
-
-    /** 用户消息 */
-    private String userMessage;
-
-    /** 助手回复 */
-    private String assistantMessage;
+    /** 会话名称（默认「新会话」，首条消息自动命名） */
+    private String name;
 
     @TableLogic
     private Integer deleted;

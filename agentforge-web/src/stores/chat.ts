@@ -1,12 +1,21 @@
-/** 会话状态：消息列表 / 流式发送（打字机）/ 历史加载 / 失败重试 */
+/** 会话状态：消息列表 / 会话列表（M2 多会话）/ 流式发送 / 历史加载 / 失败重试 */
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { apiChatHistory, apiChatStream, isAbort } from '../api/chat'
-import type { ChatMessage } from '../types/chat'
+import {
+  apiChatHistory,
+  apiChatStream,
+  apiSessionCreate,
+  apiSessionDelete,
+  apiSessionList,
+  isAbort,
+} from '../api/chat'
+import type { ChatMessage, SessionItem } from '../types/chat'
 
 export const useChatStore = defineStore('chat', () => {
   const messages = ref<ChatMessage[]>([])
   const agentId = ref<number | null>(null)
+  const sessions = ref<SessionItem[]>([])
+  const currentSessionId = ref<number | null>(null)
   const sending = ref(false)
   /** 最近一次用户消息（失败重试用） */
   const lastUserMessage = ref('')
@@ -15,14 +24,49 @@ export const useChatStore = defineStore('chat', () => {
   function reset(agentIdValue: number): void {
     agentId.value = agentIdValue
     messages.value = []
+    sessions.value = []
+    currentSessionId.value = null
     lastUserMessage.value = ''
     abortController?.abort()
     abortController = null
   }
 
+  /** 加载会话列表；无会话时自动创建一个（保证发送前必有会话） */
+  async function ensureSessions(): Promise<void> {
+    if (!agentId.value) return
+    sessions.value = await apiSessionList(agentId.value)
+    if (!sessions.value.length) {
+      const session = await apiSessionCreate(agentId.value)
+      sessions.value = [session]
+    }
+    if (!currentSessionId.value || !sessions.value.some((s) => s.id === currentSessionId.value)) {
+      currentSessionId.value = sessions.value[0].id
+    }
+  }
+
+  /** 新建会话并切换 */
+  async function createSession(): Promise<void> {
+    if (!agentId.value) return
+    const session = await apiSessionCreate(agentId.value)
+    sessions.value.unshift(session)
+    currentSessionId.value = session.id
+    messages.value = []
+  }
+
+  /** 删除会话（确认后切换回第一个会话） */
+  async function deleteSession(sessionId: number): Promise<void> {
+    await apiSessionDelete(sessionId)
+    sessions.value = sessions.value.filter((s) => s.id !== sessionId)
+    if (currentSessionId.value === sessionId) {
+      currentSessionId.value = sessions.value[0]?.id ?? null
+      messages.value = []
+      if (currentSessionId.value) await loadHistory(agentId.value!, currentSessionId.value)
+    }
+  }
+
   /** 加载历史（最近一页，20 条），组装为消息列表（正序） */
-  async function loadHistory(agentIdValue: number): Promise<void> {
-    const result = await apiChatHistory(agentIdValue, { page: 1, size: 20 })
+  async function loadHistory(agentIdValue: number, sessionId: number): Promise<void> {
+    const result = await apiChatHistory(agentIdValue, sessionId, { page: 1, size: 20 })
     messages.value = [...result.list]
       .reverse()
       .flatMap((item) => [
@@ -37,6 +81,7 @@ export const useChatStore = defineStore('chat', () => {
    */
   async function send(content: string): Promise<void> {
     if (!agentId.value) throw new Error('当前未选择智能体')
+    if (!currentSessionId.value) throw new Error('当前无会话，请先新建会话')
     if (sending.value) return
     sending.value = true
     lastUserMessage.value = content
@@ -48,6 +93,7 @@ export const useChatStore = defineStore('chat', () => {
     try {
       await apiChatStream(
         agentId.value,
+        currentSessionId.value,
         content,
         {
           onDelta: (delta) => {
@@ -93,5 +139,19 @@ export const useChatStore = defineStore('chat', () => {
     void send(lastUserMessage.value)
   }
 
-  return { messages, agentId, sending, reset, loadHistory, send, stop, retry }
+  return {
+    messages,
+    agentId,
+    sessions,
+    currentSessionId,
+    sending,
+    reset,
+    ensureSessions,
+    createSession,
+    deleteSession,
+    loadHistory,
+    send,
+    stop,
+    retry,
+  }
 })

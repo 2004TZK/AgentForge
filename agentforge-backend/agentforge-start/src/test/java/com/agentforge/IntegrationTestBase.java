@@ -76,4 +76,18 @@ public abstract class IntegrationTestBase {
         JsonNode node = objectMapper.readTree(result.getResponse().getContentAsString());
         return node.path("data").path("token").asText();
     }
+
+    /** 创建智能体，返回 ID */
+    protected long createAgent(String token, String name) throws Exception {
+        MvcResult result = mockMvc.perform(post("/agent")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"%s","systemPrompt":"测试提示词"}""".formatted(name)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andReturn();
+        JsonNode node = objectMapper.readTree(result.getResponse().getContentAsString());
+        return node.path("data").path("id").asLong();
+    }
 }

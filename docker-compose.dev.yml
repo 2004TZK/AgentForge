@@ -59,6 +59,35 @@ services:
       start_period: 10s
     networks: [agentforge-dev-net]
 
+  # Ollama 本地模型（bge-m3 向量 + qwen2.5:7b 对话），开发环境与一键部署共用
+  ollama:
+    image: ollama/ollama:latest
+    container_name: agentforge-dev-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - agentforge-dev-ollama-data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    networks: [agentforge-dev-net]
+
+  # 一次性预拉模型（失败可换镜像源或 nomic-embed-text 兜底）
+  ollama-init:
+    image: ollama/ollama:latest
+    container_name: agentforge-dev-ollama-init
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["ollama pull bge-m3 && ollama pull qwen2.5:7b && echo 'ollama models ready'"]
+    volumes:
+      - agentforge-dev-ollama-data:/root/.ollama
+    depends_on:
+      ollama: { condition: service_healthy }
+    networks: [agentforge-dev-net]
+    restart: "no"
+
 networks:
   agentforge-dev-net:
     name: agentforge-dev-net
@@ -68,3 +97,4 @@ volumes:
   agentforge-dev-mysql-data:
   agentforge-dev-redis-data:
   agentforge-dev-qdrant-data:
+  agentforge-dev-ollama-data:

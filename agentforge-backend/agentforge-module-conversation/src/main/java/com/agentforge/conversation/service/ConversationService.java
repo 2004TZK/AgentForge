@@ -20,6 +20,9 @@ public interface ConversationService {
      */
     StreamingResponseBody chatStream(ChatRequest request, Long userId);
 
-    /** 历史记录分页（按时间倒序，最新在前） */
-    PageResult<ConversationVO> history(Long agentId, Long userId, long page, long size);
+    /**
+     * 历史记录分页（按时间倒序，最新在前）。
+     * sessionId 非空时按会话隔离；为空按旧版语义（不隔离）。
+     */
+    PageResult<ConversationVO> history(Long agentId, Long sessionId, Long userId, long page, long size);
 }

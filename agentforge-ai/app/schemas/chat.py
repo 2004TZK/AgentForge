@@ -22,8 +22,15 @@ class ChatRequest(BaseModel):
     tools: List[str] = Field(default_factory=list)
 
 
+class SourceItem(BaseModel):
+    """回答引用的知识库来源（M2 起为对象，含可查看的片段）。"""
+    file: str
+    snippet: str = Field(description="引用片段（截断）")
+    score: float = 0.0
+
+
 class ChatResponse(BaseModel):
     """POST /agent/chat 响应。"""
     answer: str
-    sources: List[str] = []
+    sources: List[SourceItem] = []
     toolCalls: List[str] = []

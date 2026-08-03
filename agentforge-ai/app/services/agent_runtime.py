@@ -29,7 +29,7 @@ class ChatState(TypedDict):
     tools: list[str]
     answer: str
     tool_calls: list[str]
-    sources: list[str]
+    sources: list[dict]          # [{file, snippet, score}]
 
 
 def _call_llm_node(state: ChatState) -> ChatState:
@@ -63,11 +63,13 @@ def prepare_chat(*, agent_id: int, message: str, history: list[dict] | None = No
     """对话前置链路：规则工具执行 + 可选 RAG 检索，组装最终消息序列。
 
     返回 (messages, tool_calls, sources)；同步与流式两条路径共用。
+    sources 为 [{file, snippet, score}]，供前端展示引用与片段。
+    空知识库（无集合/无命中/检索异常）自动降级普通对话。
     """
     tools = tools or []
     tool_calls: list[str] = []
     context_notes: list[str] = []
-    sources: list[str] = []
+    sources: list[dict] = []
 
     # 1. 工具执行（Phase 2 规则触发；失败不阻断主链路，仅记录）
     for tool_name in planner.decide_tools(message, tools):
@@ -85,15 +87,16 @@ def prepare_chat(*, agent_id: int, message: str, history: list[dict] | None = No
             logger.warning("工具调用失败 %s: %s", tool_name, exc)
             context_notes.append(f"工具 {tool_name} 调用失败: {exc}")
 
-    # 2. RAG 检索注入（防御式：Qdrant/collection 不可用则跳过）
+    # 2. RAG 检索注入（防御式：Qdrant/collection 不可用则跳过，降级普通对话）
     try:
         chunks = rag_service.search(agent_id, message, settings.rag_top_k)
         if chunks:
             knowledge = "\n\n".join(f"[{c['file']}] {c['content']}" for c in chunks)
             context_notes.append(f"知识库检索结果:\n{knowledge}")
-            sources = sorted({c["file"] for c in chunks})
+            sources = [{"file": c["file"], "snippet": c["content"][:200], "score": c["score"]}
+                       for c in chunks]
     except Exception as exc:  # noqa: BLE001
-        logger.info("RAG 检索跳过: %s", exc)
+        logger.info("RAG 检索跳过（降级普通对话）: %s", exc)
 
     # 3. 组装消息序列（系统提示词 + 历史 + 本轮 + 上下文）
     messages: list[dict] = []

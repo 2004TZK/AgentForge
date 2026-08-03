@@ -85,7 +85,25 @@ public class FileServiceImpl implements FileService {
             throw new BusinessException(ResultCode.SYSTEM_ERROR, "文件保存失败");
         }
 
-        // 2. 写 document 行（PENDING）
+        // 2. 同名覆盖策略：逻辑删除旧版本并清理旧向量（M2）
+        //    先删向量再入库，避免旧 chunk 数多于新文档时残留孤儿向量
+        List<Document> existing = documentMapper.selectList(
+                new LambdaQueryWrapper<Document>()
+                        .eq(Document::getAgentId, agentId)
+                        .eq(Document::getFileName, file.getOriginalFilename()));
+        for (Document old : existing) {
+            try {
+                AiDeleteResponse response = aiServiceClient.deleteFile(agentId, old.getFileName());
+                log.info("同名覆盖清理旧向量: id={}, deletedCount={}", old.getId(),
+                        response.getDeletedCount() == null ? 0 : response.getDeletedCount());
+            } catch (BusinessException e) {
+                log.warn("同名覆盖清理旧向量失败（旧文档仍删除，向量由新入库覆盖）: id={}, err={}",
+                        old.getId(), e.getMessage());
+            }
+            documentMapper.deleteById(old.getId());
+        }
+
+        // 3. 写 document 行（PENDING）
         Document document = new Document();
         document.setAgentId(agentId);
         document.setFileName(file.getOriginalFilename());
@@ -129,14 +147,11 @@ public class FileServiceImpl implements FileService {
         Document document = getDocumentOrThrow(documentId);
         String relativePath = document.getFilePath();
 
-        // 1. 删除 Qdrant 向量（失败仅记录日志，不阻断元数据删除）
-        try {
-            AiDeleteResponse response = aiServiceClient.deleteFile(document.getAgentId(), document.getFileName());
-            log.info("删除文档向量: id={}, deletedCount={}", documentId,
-                    response.getDeletedCount() == null ? 0 : response.getDeletedCount());
-        } catch (BusinessException e) {
-            log.warn("删除 Qdrant 向量失败（已忽略）: id={}, err={}", documentId, e.getMessage());
-        }
+        // 1. 删除 Qdrant 向量（失败抛出业务异常，事务回滚元数据删除，
+        //    避免"元数据已删、向量残留"的集合不一致；用户可重试删除）
+        AiDeleteResponse response = aiServiceClient.deleteFile(document.getAgentId(), document.getFileName());
+        log.info("删除文档向量: id={}, deletedCount={}", documentId,
+                response.getDeletedCount() == null ? 0 : response.getDeletedCount());
 
         // 2. 逻辑删除元数据
         documentMapper.deleteById(documentId);

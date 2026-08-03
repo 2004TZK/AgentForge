@@ -59,12 +59,14 @@ public class ChatController {
                 .body(conversationService.chatStream(request, UserContext.getUserId()));
     }
 
-    @Operation(summary = "历史记录分页")
+    @Operation(summary = "历史记录分页（可按会话隔离）")
     @GetMapping("/history")
     public Result<PageResult<ConversationVO>> history(
             @RequestParam @NotNull(message = "agentId 不能为空") Long agentId,
+            @RequestParam(required = false) Long sessionId,
             @RequestParam(defaultValue = "1") @Min(value = 1, message = "page 需 >= 1") long page,
             @RequestParam(defaultValue = "20") @Min(value = 1) @Max(value = 100, message = "size 需 <= 100") long size) {
-        return Result.success(conversationService.history(agentId, UserContext.getUserId(), page, size));
+        return Result.success(conversationService.history(agentId, sessionId,
+                UserContext.getUserId(), page, size));
     }
 }

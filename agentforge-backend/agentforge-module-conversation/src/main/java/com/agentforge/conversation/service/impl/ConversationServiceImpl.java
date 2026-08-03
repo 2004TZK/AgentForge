@@ -7,13 +7,16 @@ import com.agentforge.agent.mapper.AgentToolMapper;
 import com.agentforge.aigateway.client.AiServiceClient;
 import com.agentforge.aigateway.dto.AiChatRequest;
 import com.agentforge.aigateway.dto.AiChatResponse;
+import com.agentforge.aigateway.dto.AiSourceItem;
 import com.agentforge.aigateway.dto.ChatHistoryItem;
 import com.agentforge.common.core.PageResult;
 import com.agentforge.common.core.ResultCode;
 import com.agentforge.common.exception.BusinessException;
 import com.agentforge.conversation.dto.ChatRequest;
 import com.agentforge.conversation.entity.Conversation;
+import com.agentforge.conversation.entity.Session;
 import com.agentforge.conversation.mapper.ConversationMapper;
+import com.agentforge.conversation.mapper.SessionMapper;
 import com.agentforge.conversation.service.ConversationService;
 import com.agentforge.conversation.vo.ChatVO;
 import com.agentforge.conversation.vo.ConversationVO;
@@ -27,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.BufferedReader;
@@ -46,6 +50,7 @@ import java.util.stream.Collectors;
  * 同步链路（设计 7.4 节）：用户问题 → AI /agent/chat（携带 Agent 配置与最近历史）
  * → 返回 answer+sources → 落库 conversation → 透传前端。
  * 流式链路（M1）：AI /agent/chat/stream 事件流原样透传，done 事件时落库。
+ * M2 起历史按会话隔离（sessionId）；会话默认名在首条消息成功后自动命名。
  * 注意：AI 调用失败时不落库（避免记录半截对话），错误码由 ai-gateway 映射。
  */
 @Slf4j
@@ -56,7 +61,14 @@ public class ConversationServiceImpl implements ConversationService {
     /** 携带给 AI 的历史轮数 */
     private static final int HISTORY_ROUNDS = 10;
 
+    /** 会话默认名称（首条消息成功后自动命名覆盖） */
+    private static final String DEFAULT_SESSION_NAME = "新会话";
+
+    /** 自动命名的消息截断长度 */
+    private static final int SESSION_NAME_MAX = 20;
+
     private final ConversationMapper conversationMapper;
+    private final SessionMapper sessionMapper;
     private final AgentMapper agentMapper;
     private final AgentToolMapper agentToolMapper;
     private final AiServiceClient aiServiceClient;
@@ -71,7 +83,8 @@ public class ConversationServiceImpl implements ConversationService {
         AiChatResponse aiResponse = aiServiceClient.chat(aiRequest);
 
         // 落库（一问一答一行；失败随事务回滚，向上抛错）
-        recordConversation(request.getAgentId(), userId, request.getMessage(), aiResponse);
+        recordConversation(request, userId, aiResponse);
+        autoNameSession(request, userId);
 
         return ChatVO.builder()
                 .answer(aiResponse.getAnswer())
@@ -90,7 +103,7 @@ public class ConversationServiceImpl implements ConversationService {
     /**
      * SSE 字节透传：AI 服务原始事件流原样转发给前端（保证打字机低延迟），
      * 嗅探 done/error 终端事件用于落库与结束。
-     * 运行在 WebMvc 异步线程，见 {@link #recordConversation} 关于事务的说明。
+     * 运行在 WebMvc 异步线程，见 {@link #recordStreamResult} 关于事务的说明。
      */
     private void relayStream(AiChatRequest aiRequest, ChatRequest request, Long userId,
                              OutputStream outputStream) {
@@ -132,9 +145,10 @@ public class ConversationServiceImpl implements ConversationService {
             if ("done".equals(type)) {
                 AiChatResponse result = new AiChatResponse();
                 result.setAnswer(node.path("answer").asText(""));
-                result.setSources(parseStringArray(node, "sources"));
+                result.setSources(parseSources(node.path("sources")));
                 result.setToolCalls(parseStringArray(node, "toolCalls"));
-                recordStreamResult(request.getAgentId(), userId, request.getMessage(), result);
+                recordStreamResult(request, userId, result);
+                autoNameSession(request, userId);
                 return true;
             }
             if ("error".equals(type)) {
@@ -151,11 +165,12 @@ public class ConversationServiceImpl implements ConversationService {
     /**
      * 落库一问一答（同步链路：随 @Transactional 事务提交，失败向上抛错）。
      */
-    private void recordConversation(Long agentId, Long userId, String userMessage, AiChatResponse result) {
+    private void recordConversation(ChatRequest request, Long userId, AiChatResponse result) {
         Conversation conversation = new Conversation();
-        conversation.setAgentId(agentId);
+        conversation.setAgentId(request.getAgentId());
         conversation.setUserId(userId);
-        conversation.setUserMessage(userMessage);
+        conversation.setSessionId(request.getSessionId());
+        conversation.setUserMessage(request.getMessage());
         conversation.setAssistantMessage(result.getAnswer());
         conversationMapper.insert(conversation);
     }
@@ -164,11 +179,38 @@ public class ConversationServiceImpl implements ConversationService {
      * 流式链路落库：由 WebMvc 异步线程调用，不经事务代理 —— 单条 INSERT 原子提交，
      * 无需事务；落库失败不阻断已输出的回答，仅记录日志。
      */
-    private void recordStreamResult(Long agentId, Long userId, String userMessage, AiChatResponse result) {
+    private void recordStreamResult(ChatRequest request, Long userId, AiChatResponse result) {
         try {
-            recordConversation(agentId, userId, userMessage, result);
+            recordConversation(request, userId, result);
         } catch (Exception e) {
-            log.error("流式对话落库失败: agentId={}, userId={}", agentId, userId, e);
+            log.error("流式对话落库失败: agentId={}, userId={}", request.getAgentId(), userId, e);
+        }
+    }
+
+    /**
+     * 首条消息自动命名会话：会话名仍为默认「新会话」时，以消息前 20 字覆盖。
+     * 显式自定义过名称的会话不受影响；仅校验本人会话；失败不影响主链路。
+     */
+    private void autoNameSession(ChatRequest request, Long userId) {
+        Long sessionId = request.getSessionId();
+        if (sessionId == null || !StringUtils.hasText(request.getMessage())) {
+            return;
+        }
+        try {
+            Session session = sessionMapper.selectById(sessionId);
+            if (session != null && session.getUserId().equals(userId)
+                    && DEFAULT_SESSION_NAME.equals(session.getName())) {
+                String message = request.getMessage().trim();
+                String name = message.length() > SESSION_NAME_MAX
+                        ? message.substring(0, SESSION_NAME_MAX) : message;
+                Session update = new Session();
+                update.setId(sessionId);
+                update.setName(name);
+                sessionMapper.updateById(update);
+                log.info("会话自动命名: id={}, name={}", sessionId, name);
+            }
+        } catch (Exception e) {
+            log.warn("会话自动命名失败: sessionId={}", sessionId, e);
         }
     }
 
@@ -179,11 +221,13 @@ public class ConversationServiceImpl implements ConversationService {
             throw new BusinessException(ResultCode.RESOURCE_NOT_FOUND, "智能体不存在");
         }
 
-        // 1. 组装最近历史（倒序取最近 N 轮后反转为正序）
+        // 1. 组装最近历史（按会话隔离；倒序取最近 N 轮后反转为正序）
         List<Conversation> recent = conversationMapper.selectList(
                 new LambdaQueryWrapper<Conversation>()
                         .eq(Conversation::getAgentId, request.getAgentId())
                         .eq(Conversation::getUserId, userId)
+                        .eq(request.getSessionId() != null, Conversation::getSessionId,
+                                request.getSessionId())
                         .orderByDesc(Conversation::getId)
                         .last("LIMIT " + HISTORY_ROUNDS));
         List<ChatHistoryItem> history = new ArrayList<>();
@@ -213,11 +257,13 @@ public class ConversationServiceImpl implements ConversationService {
     }
 
     @Override
-    public PageResult<ConversationVO> history(Long agentId, Long userId, long page, long size) {
+    public PageResult<ConversationVO> history(Long agentId, Long sessionId, Long userId,
+                                              long page, long size) {
         IPage<Conversation> result = conversationMapper.selectPage(Page.of(page, size),
                 new LambdaQueryWrapper<Conversation>()
                         .eq(Conversation::getAgentId, agentId)
                         .eq(Conversation::getUserId, userId)
+                        .eq(sessionId != null, Conversation::getSessionId, sessionId)
                         .orderByDesc(Conversation::getId));
         List<ConversationVO> list = result.getRecords().stream()
                 .map(c -> ConversationVO.builder()
@@ -251,6 +297,22 @@ public class ConversationServiceImpl implements ConversationService {
         outputStream.write(objectMapper.writeValueAsBytes(event));
         outputStream.write("\n\n".getBytes(StandardCharsets.UTF_8));
         outputStream.flush();
+    }
+
+    /** 解析 done 事件中的 sources 数组（[{file, snippet, score}]） */
+    private List<AiSourceItem> parseSources(JsonNode sourcesNode) {
+        List<AiSourceItem> sources = new ArrayList<>();
+        if (sourcesNode == null || !sourcesNode.isArray()) {
+            return sources;
+        }
+        sourcesNode.forEach(item -> {
+            AiSourceItem source = new AiSourceItem();
+            source.setFile(item.path("file").asText(""));
+            source.setSnippet(item.path("snippet").asText(""));
+            source.setScore(item.path("score").asDouble(0.0));
+            sources.add(source);
+        });
+        return sources;
     }
 
     private List<String> parseStringArray(JsonNode node, String field) {

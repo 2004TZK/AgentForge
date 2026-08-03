@@ -57,10 +57,21 @@ CREATE TABLE `document` (
   `updated_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE `session` (
+  `id`           BIGINT       NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `agent_id`     BIGINT       NOT NULL,
+  `user_id`      BIGINT       NOT NULL,
+  `name`         VARCHAR(100) NOT NULL DEFAULT '新会话',
+  `deleted`      TINYINT      NOT NULL DEFAULT 0,
+  `created_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE `conversation` (
   `id`                BIGINT  NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `agent_id`          BIGINT  NOT NULL,
   `user_id`           BIGINT  NOT NULL,
+  `session_id`        BIGINT,
   `user_message`      CLOB,
   `assistant_message` CLOB,
   `deleted`           TINYINT NOT NULL DEFAULT 0,

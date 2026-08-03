@@ -1,21 +1,42 @@
-/** 对话接口：发送消息（同步/SSE 流式）/ 历史查询 */
+/** 对话接口：发送消息（同步/SSE 流式）/ 历史查询 / 会话管理 */
 import { http } from '../utils/request'
 import { getToken } from '../utils/auth'
 import type { PageQuery, PageResult } from '../types/api'
-import type { ChatResult, ConversationItem } from '../types/chat'
+import type { ChatResult, ConversationItem, SessionItem, SourceItem } from '../types/chat'
 
-export function apiSendMessage(agentId: number, message: string): Promise<ChatResult> {
-  return http.post<ChatResult>('/chat', { agentId, message })
+export function apiSendMessage(
+  agentId: number,
+  sessionId: number,
+  message: string,
+): Promise<ChatResult> {
+  return http.post<ChatResult>('/chat', { agentId, sessionId, message })
 }
 
 export function apiChatHistory(
   agentId: number,
+  sessionId: number,
   params: PageQuery,
 ): Promise<PageResult<ConversationItem>> {
   return http.get<PageResult<ConversationItem>>('/chat/history', {
     agentId,
+    sessionId,
     ...params,
   })
+}
+
+/** 会话列表（按最后活跃倒序） */
+export function apiSessionList(agentId: number): Promise<SessionItem[]> {
+  return http.get<SessionItem[]>('/chat/session/list', { agentId })
+}
+
+/** 新建会话 */
+export function apiSessionCreate(agentId: number, name?: string): Promise<SessionItem> {
+  return http.post<SessionItem>('/chat/session', { agentId, name })
+}
+
+/** 删除会话 */
+export function apiSessionDelete(id: number): Promise<void> {
+  return http.del<void>(`/chat/session/${id}`)
 }
 
 /** SSE 事件（与后端 /chat/stream 对齐） */
@@ -23,7 +44,7 @@ export interface ChatStreamEvent {
   type: 'delta' | 'done' | 'error'
   content?: string
   answer?: string
-  sources?: string[]
+  sources?: SourceItem[]
   toolCalls?: string[]
   code?: number
   message?: string
@@ -43,6 +64,7 @@ export interface ChatStreamHandlers {
  */
 export async function apiChatStream(
   agentId: number,
+  sessionId: number,
   message: string,
   handlers: ChatStreamHandlers,
   signal?: AbortSignal,
@@ -57,7 +79,7 @@ export async function apiChatStream(
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({ agentId, message }),
+      body: JSON.stringify({ agentId, sessionId, message }),
       signal,
     })
   } catch (e) {

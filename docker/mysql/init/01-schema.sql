@@ -84,17 +84,34 @@ CREATE TABLE IF NOT EXISTS `document` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='文档表';
 
 -- ------------------------------------------------------------
--- 对话记录表（一问一答一行，Phase 1 单表；Phase 3 演进多会话）
+-- 会话表（M2 多会话：同一 Agent 下用户可建多个会话，历史按会话隔离）
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `session` (
+  `id`           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '会话ID',
+  `agent_id`     BIGINT UNSIGNED NOT NULL                COMMENT '智能体ID',
+  `user_id`      BIGINT UNSIGNED NOT NULL                COMMENT '用户ID',
+  `name`         VARCHAR(100)    NOT NULL DEFAULT '新会话' COMMENT '会话名称（首条消息自动命名）',
+  `deleted`      TINYINT(1)      NOT NULL DEFAULT 0      COMMENT '逻辑删除',
+  `created_time` DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_time` DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_agent_user_time` (`agent_id`, `user_id`, `updated_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='会话表';
+
+-- ------------------------------------------------------------
+-- 对话记录表（一问一答一行；M2 起按会话隔离，session_id 为 NULL 表示历史遗留数据）
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `conversation` (
   `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '记录ID',
   `agent_id`          BIGINT UNSIGNED NOT NULL                COMMENT '智能体ID',
   `user_id`           BIGINT UNSIGNED NOT NULL                COMMENT '用户ID',
+  `session_id`        BIGINT UNSIGNED NULL                    COMMENT '会话ID（NULL=旧版数据）',
   `user_message`      TEXT            NULL                    COMMENT '用户消息',
   `assistant_message` TEXT            NULL                    COMMENT '助手回复',
   `deleted`           TINYINT(1)      NOT NULL DEFAULT 0      COMMENT '逻辑删除',
   `created_time`      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_time`      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
-  KEY `idx_agent_user_time` (`agent_id`, `user_id`, `created_time`)
+  KEY `idx_agent_user_time` (`agent_id`, `user_id`, `created_time`),
+  KEY `idx_session_time` (`session_id`, `created_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='对话记录表（一问一答一行）';

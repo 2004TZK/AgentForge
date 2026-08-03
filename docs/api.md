@@ -29,13 +29,19 @@
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
-| POST | /chat | 发送消息 `{agentId, message}` → ChatVO `{answer, sources[], toolCalls[]}`（同步） |
+| POST | /chat | 发送消息 `{agentId, sessionId, message}` → ChatVO `{answer, sources[], toolCalls[]}`（同步） |
 | POST | /chat/stream | 发送消息（SSE 流式回答，见下方事件协议） |
-| GET | /chat/history?agentId&page&size | 历史分页（倒序）→ PageResult\<ConversationVO\> |
+| GET | /chat/history?agentId&sessionId&page&size | 历史分页（倒序，按会话隔离）→ PageResult\<ConversationVO\> |
+| GET | /chat/session/list?agentId | 会话列表（按最后活跃倒序）→ SessionVO[] |
+| POST | /chat/session | 新建会话 `{agentId, name?}`（默认「新会话」，首条消息自动命名） |
+| DELETE | /chat/session/{id} | 删除会话（逻辑删除，消息历史保留） |
+
+> M2 多会话：`sessionId` 为可选参数，前端始终携带；省略时按旧版语义处理（不隔离历史）。
+> 会话删除仅校验本人（20003）；会话名在首条消息成功后自动取消息前 20 字。
 
 ### SSE 流式接口（POST /chat/stream）
 
-请求体与 `/chat` 一致 `{agentId, message}`；响应为 `text/event-stream`（`Cache-Control: no-cache`、`X-Accel-Buffering: no`，Nginx 已关闭缓冲）。事件以空行分隔，`data:` 行为 JSON：
+请求体与 `/chat` 一致 `{agentId, sessionId, message}`；响应为 `text/event-stream`（`Cache-Control: no-cache`、`X-Accel-Buffering: no`，Nginx 已关闭缓冲）。事件以空行分隔，`data:` 行为 JSON：
 
 | 事件 type | 字段 | 说明 |
 |---|---|---|
@@ -44,6 +50,14 @@
 | error | `code`、`message` | 失败（错误码同下表）；流结束但未收到 done/error 视为连接中断 |
 
 长时间无增量时服务端发送 `: keepalive` 注释帧保活；前端可用 `AbortController` 主动中断（停止按钮）。
+
+### 引用来源结构（M2 起）
+
+`ChatVO.sources` 与 done 事件的 `sources` 均为对象数组，供前端展示引用与查看片段：
+
+```json
+[{"file": "rag.md", "snippet": "向量模型：本地 Ollama 的 bge-m3…", "score": 0.87}]
+```
 
 ### 错误码
 
@@ -59,8 +73,11 @@
 |---|---|---|
 | POST | /file/upload?agentId | multipart 上传（pdf/docx/txt/md，≤20MB）→ DocumentVO；自动触发 RAG 入库 |
 | GET | /file/list?agentId&page&size | 文档分页 |
-| DELETE | /file/{id} | 删除（元数据 + 磁盘文件 + Qdrant 向量） |
+| DELETE | /file/{id} | 删除（元数据 + 磁盘文件 + Qdrant 向量；向量删除失败则整体失败可重试） |
 | POST | /file/{id}/retry | 重试 RAG 入库（PENDING/FAILED） |
+
+> M2 同名覆盖：同名文件重复上传会先清理旧文档（元数据 + 向量）再入库，避免旧分块残留。
+> 删除文档时 Qdrant 向量删除失败会返回 40004 并保留记录（保证集合一致，可重试删除）。
 
 错误码：40001 类型不支持、40002 超 20MB、40003 空文件、40004 RAG 失败。
 
@@ -69,7 +86,7 @@
 | 方法 | 路径 | 说明 |
 |---|---|---|
 | GET | /health | `{status, redis, qdrant}` |
-| POST | /agent/chat | `{agentId, message, history[], systemPrompt?, modelName?, temperature?, tools[]}` → `{answer, sources[], toolCalls[]}` |
+| POST | /agent/chat | `{agentId, message, history[], systemPrompt?, modelName?, temperature?, tools[]}` → `{answer, sources[], toolCalls[]}`；`sources` 为 `[{file, snippet, score}]` |
 | POST | /agent/chat/stream | 同请求体；SSE 流式（事件协议同第 3 节，done 事件携带完整 answer 供落库） |
 | POST | /rag/ingest | `{agentId, fileName, filePath}` → `{status, chunkCount}` |
 | POST | /rag/search | `{agentId, query, topK}` → `{chunks[]}` |

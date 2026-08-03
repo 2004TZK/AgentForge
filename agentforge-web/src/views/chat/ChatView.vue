@@ -1,5 +1,8 @@
 <script setup lang="ts">
-/** 聊天页：选择智能体 → 加载历史 → 发送消息（SSE 流式打字机 + 失败重试） */
+/**
+ * 聊天页：选择智能体 → 会话列表（M2 多会话）→ 发送消息（SSE 流式打字机 + 失败重试）
+ * 助手回答可展示知识库引用（来源文件列表，点击查看片段）。
+ */
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppLayout from '../../components/layout/AppLayout.vue'
@@ -16,6 +19,8 @@ const agents = ref(agentStore.list)
 const selectedAgentId = ref<number | null>(null)
 const input = ref('')
 const scrollRef = ref<HTMLElement | null>(null)
+/** 已展开片段的引用（key: `${msgIndex}-${srcIndex}`） */
+const expandedSources = ref<Set<string>>(new Set())
 
 const sending = computed(() => chatStore.sending)
 
@@ -26,15 +31,54 @@ async function ensureAgents(): Promise<void> {
   }
 }
 
-/** 切换智能体：重置消息并加载历史 */
+/** 切换智能体：重置会话与消息，加载会话列表与当前会话历史 */
 async function onAgentChange(agentIdValue: number): Promise<void> {
   chatStore.reset(agentIdValue)
   try {
-    await chatStore.loadHistory(agentIdValue)
+    await chatStore.ensureSessions()
+    if (chatStore.currentSessionId) {
+      await chatStore.loadHistory(agentIdValue, chatStore.currentSessionId)
+    }
+  } catch {
+    notifyError('会话加载失败')
+  }
+  scrollToBottom()
+}
+
+/** 切换会话：加载该会话历史 */
+async function onSessionChange(sessionId: number): Promise<void> {
+  if (chatStore.currentSessionId === sessionId) return
+  chatStore.currentSessionId = sessionId
+  try {
+    await chatStore.loadHistory(chatStore.agentId!, sessionId)
   } catch {
     notifyError('历史记录加载失败')
   }
   scrollToBottom()
+}
+
+async function onCreateSession(): Promise<void> {
+  try {
+    await chatStore.createSession()
+  } catch (e) {
+    notifyError((e as Error).message)
+  }
+}
+
+async function onDeleteSession(sessionId: number): Promise<void> {
+  if (!window.confirm('确认删除该会话？会话内消息将不再展示（数据保留）。')) return
+  try {
+    await chatStore.deleteSession(sessionId)
+  } catch (e) {
+    notifyError((e as Error).message)
+  }
+}
+
+function toggleSource(key: string): void {
+  const next = new Set(expandedSources.value)
+  if (next.has(key)) next.delete(key)
+  else next.add(key)
+  expandedSources.value = next
 }
 
 async function onSend(): Promise<void> {
@@ -92,6 +136,36 @@ onMounted(async () => {
           </button>
         </div>
         <p v-if="!agents.length" class="muted">暂无智能体，请先到「智能体」页面创建</p>
+
+        <template v-if="selectedAgentId">
+          <div class="session-header">
+            <h3 class="chat-side-title">会话</h3>
+            <button class="btn btn-secondary btn-sm" @click="onCreateSession">＋新建</button>
+          </div>
+          <div
+            v-for="session in chatStore.sessions"
+            :key="session.id"
+            class="agent-item"
+          >
+            <div class="session-row">
+              <button
+                class="agent-btn session-btn"
+                :class="{ active: chatStore.currentSessionId === session.id }"
+                @click="onSessionChange(session.id)"
+              >
+                {{ session.name }}
+              </button>
+              <button
+                class="session-del"
+                title="删除会话"
+                @click.stop="onDeleteSession(session.id)"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+          <p v-if="!chatStore.sessions.length" class="muted">暂无会话，点击「新建」开始对话</p>
+        </template>
       </div>
 
       <div class="chat-main card">
@@ -110,7 +184,22 @@ onMounted(async () => {
               <template v-else>{{ msg.content }}</template>
               <span v-if="msg.status === 'streaming'" class="cursor">▍</span>
               <div v-if="msg.role === 'assistant' && msg.sources?.length" class="sources">
-                来源：{{ msg.sources.join('、') }}
+                <span class="sources-label">来源：</span>
+                <button
+                  v-for="(src, srcIndex) in msg.sources"
+                  :key="`${index}-${srcIndex}`"
+                  class="source-chip"
+                  @click="toggleSource(`${index}-${srcIndex}`)"
+                >
+                  {{ src.file }}
+                </button>
+                <div
+                  v-if="expandedSources.has(`${index}-${srcIndex}`)"
+                  :key="`snippet-${index}-${srcIndex}`"
+                  class="source-snippet"
+                >
+                  {{ msg.sources![srcIndex].snippet }}
+                </div>
               </div>
               <div v-if="msg.status === 'error'" class="error-line">
                 <span class="error-text">{{ msg.error || '回答失败' }}</span>
@@ -159,6 +248,17 @@ onMounted(async () => {
   color: var(--color-text-secondary);
 }
 
+.session-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 18px;
+}
+
+.session-header .chat-side-title {
+  margin: 0;
+}
+
 .agent-item {
   margin-bottom: 6px;
 }
@@ -182,6 +282,34 @@ onMounted(async () => {
   background: var(--color-primary);
   color: #fff;
   border-color: var(--color-primary);
+}
+
+.session-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.session-btn {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-del {
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+
+.session-del:hover {
+  color: var(--color-danger);
+  background: rgba(239, 68, 68, 0.08);
 }
 
 .chat-main {
@@ -247,9 +375,42 @@ onMounted(async () => {
 }
 
 .sources {
-  margin-top: 6px;
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.sources-label {
   font-size: 12px;
   color: var(--color-text-secondary);
+}
+
+.source-chip {
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
+  background: transparent;
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.source-chip:hover {
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.source-snippet {
+  width: 100%;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-left: 3px solid var(--color-primary);
+  background: rgba(37, 99, 235, 0.05);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--color-text);
+  white-space: pre-wrap;
 }
 
 .error-line {
