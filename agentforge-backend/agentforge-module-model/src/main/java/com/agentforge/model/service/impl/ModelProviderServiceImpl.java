@@ -65,7 +65,14 @@ public class ModelProviderServiceImpl implements ModelProviderService {
     public ProviderVO update(Long providerId, ProviderRequest request, Long operatorId) {
         ModelProvider entity = getOrThrow(providerId);
         checkOwner(entity, operatorId);
+        // apiKey 为空或为掩码回显值（前端编辑回填）时保留原 key，避免编辑保存清空/覆盖密钥
+        String requestedKey = request.getApiKey();
+        boolean keepKey = requestedKey == null || requestedKey.isBlank() || requestedKey.contains("*");
+        String prevKey = entity.getApiKey();
         fill(entity, request);
+        if (keepKey) {
+            entity.setApiKey(prevKey);
+        }
         providerMapper.updateById(entity);
         log.info("更新 Provider: id={}, operatorId={}", providerId, operatorId);
         return toVO(entity);
@@ -114,12 +121,23 @@ public class ModelProviderServiceImpl implements ModelProviderService {
                 .name(entity.getName())
                 .providerType(entity.getProviderType())
                 .baseUrl(entity.getBaseUrl())
-                .apiKey(entity.getApiKey())
+                .apiKey(maskKey(entity.getApiKey()))
                 .models(entity.getModels() == null ? List.of() : entity.getModels())
                 .enabled(entity.getEnabled())
                 .creatorId(entity.getCreatorId())
                 .createdTime(entity.getCreatedTime())
                 .build();
+    }
+
+    /** API Key 脱敏回显：仅展示前 3 与后 4 位，其余掩码；空返回 null（避免密钥明文泄露到前端） */
+    private String maskKey(String apiKey) {
+        if (apiKey == null || apiKey.isBlank()) {
+            return null;
+        }
+        if (apiKey.length() <= 8) {
+            return "****";
+        }
+        return apiKey.substring(0, 3) + "****" + apiKey.substring(apiKey.length() - 4);
     }
 
     private static java.util.function.Consumer<LambdaQueryWrapper<ModelProvider>> eqCreator(Long creatorId) {

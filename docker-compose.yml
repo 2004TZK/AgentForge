@@ -85,7 +85,7 @@ services:
         limits:
           memory: 1g
 
-  # ---------- Ollama（本地模型：bge-m3 向量 + qwen2.5:7b 对话） ----------
+  # ---------- Ollama（本地模型：bge-m3 向量 + qwen3.5:0.8b 对话） ----------
   ollama:
     image: ollama/ollama:latest
     container_name: agentforge-ollama

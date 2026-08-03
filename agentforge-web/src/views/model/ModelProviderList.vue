@@ -155,7 +155,7 @@ onMounted(load)
           </div>
           <div class="form-item">
             <label>API Key（本地模型留空）</label>
-            <input v-model="form.apiKey" class="input" type="password" placeholder="sk-…" />
+            <input v-model="form.apiKey" class="input" type="password" placeholder="留空保持不变；已配置 Key 不回显明文" />
           </div>
         </div>
         <div class="form-item">

@@ -22,7 +22,7 @@ public class ProviderVO {
 
     private String baseUrl;
 
-    /** API Key（已配置时回显，本地模型为空） */
+    /** API Key（脱敏回显：前 3 + **** + 后 4；本地模型为空） */
     private String apiKey;
 
     /** 可用模型列表 */

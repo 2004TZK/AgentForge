@@ -65,7 +65,7 @@ class ModelProviderIntegrationTest extends IntegrationTestBase {
                                  "baseUrl":"https://api.deepseek.com/v1","apiKey":"sk-new",
                                  "models":["deepseek-chat","deepseek-reasoner"],"enabled":true}"""))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.apiKey").value("sk-new"))
+                .andExpect(jsonPath("$.data.apiKey").value("****"))
                 .andExpect(jsonPath("$.data.models[1]").value("deepseek-reasoner"));
 
         // 删除
@@ -138,6 +138,57 @@ class ModelProviderIntegrationTest extends IntegrationTestBase {
                                 {"name":"x","providerType":"bad","baseUrl":"http://x"}"""))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(10001));
+    }
+
+    @Test
+    @DisplayName("API Key 脱敏回显；留空/掩码更新不覆盖原 Key")
+    void apiKeyMaskedAndKeptOnUpdate() throws Exception {
+        String token = registerAndLogin("alice");
+        MvcResult created = mockMvc.perform(post("/model/providers")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"DeepSeek 云端","providerType":"openai",
+                                 "baseUrl":"https://api.deepseek.com/v1","apiKey":"sk-abcdef1234567890",
+                                 "models":["deepseek-chat"],"enabled":true}"""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.apiKey").value("sk-****7890"))
+                .andReturn();
+        long id = extractId(created);
+
+        // 留空更新（未传 apiKey）：密钥保留，回显仍为掩码
+        mockMvc.perform(put("/model/providers/{id}", id)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"DeepSeek 云端","providerType":"openai",
+                                 "baseUrl":"https://api.deepseek.com/v1",
+                                 "models":["deepseek-chat","deepseek-reasoner"],"enabled":true}"""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.apiKey").value("sk-****7890"))
+                .andExpect(jsonPath("$.data.models[1]").value("deepseek-reasoner"));
+
+        // 用掩码回显值更新：视为未修改，密钥保留
+        mockMvc.perform(put("/model/providers/{id}", id)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"DeepSeek 云端","providerType":"openai",
+                                 "baseUrl":"https://api.deepseek.com/v1","apiKey":"sk-****7890",
+                                 "models":["deepseek-chat"],"enabled":true}"""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.apiKey").value("sk-****7890"));
+
+        // 传真实新 Key：覆盖并返回新掩码
+        mockMvc.perform(put("/model/providers/{id}", id)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"DeepSeek 云端","providerType":"openai",
+                                 "baseUrl":"https://api.deepseek.com/v1","apiKey":"sk-realnewkey12345",
+                                 "models":["deepseek-chat"],"enabled":true}"""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.apiKey").value("sk-****2345"));
     }
 
     @Test
