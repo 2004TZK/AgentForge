@@ -1,0 +1,92 @@
+# ============================================================
+# AgentForge CI（M4）：三端自动化验证 + Docker 镜像构建
+#   触发：push 到 main / 任意 PR → 三端测试红则合并不通过
+#   jobs: backend-test / ai-test / web-build / docker-build
+# ============================================================
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ---------- 后端：Maven 集成测试（H2 内存库，无需外部服务） ----------
+  backend-test:
+    name: Backend (mvn test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Run tests
+        working-directory: agentforge-backend
+        run: mvn -B test -pl agentforge-start -am
+
+  # ---------- AI 服务：pytest（FakeRedis/单元级，无需真实模型） ----------
+  ai-test:
+    name: AI Service (pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install dependencies
+        working-directory: agentforge-ai
+        run: |
+          pip install -r requirements.txt
+          pip install pytest
+      - name: Run tests
+        working-directory: agentforge-ai
+        run: pytest -q
+
+  # ---------- 前端：依赖安装 + 生产构建（含代码分割/类型检查） ----------
+  web-build:
+    name: Web (npm build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: agentforge-web/package-lock.json
+      - name: Install dependencies
+        working-directory: agentforge-web
+        run: npm ci --no-audit --no-fund
+      - name: Build
+        working-directory: agentforge-web
+        run: npm run build
+
+  # ---------- Docker 镜像构建（仅 main 推送；产物发布 GHCR） ----------
+  docker-build:
+    name: Docker images (GHCR)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+    strategy:
+      matrix:
+        service: [ai, backend, web]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./agentforge-${{ matrix.service }}
+          push: true
+          tags: ghcr.io/${{ github.repository }}/${{ matrix.service }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
