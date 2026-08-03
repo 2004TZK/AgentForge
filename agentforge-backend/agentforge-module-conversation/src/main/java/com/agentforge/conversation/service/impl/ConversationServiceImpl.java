@@ -172,6 +172,7 @@ public class ConversationServiceImpl implements ConversationService {
         conversation.setSessionId(request.getSessionId());
         conversation.setUserMessage(request.getMessage());
         conversation.setAssistantMessage(result.getAnswer());
+        conversation.setSources(result.getSources() == null ? List.of() : result.getSources());
         conversationMapper.insert(conversation);
     }
 
@@ -271,6 +272,7 @@ public class ConversationServiceImpl implements ConversationService {
                         .agentId(c.getAgentId())
                         .userMessage(c.getUserMessage())
                         .assistantMessage(c.getAssistantMessage())
+                        .sources(c.getSources() == null ? List.of() : c.getSources())
                         .createdTime(c.getCreatedTime())
                         .build())
                 .collect(Collectors.toList());

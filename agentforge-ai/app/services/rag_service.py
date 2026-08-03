@@ -13,6 +13,7 @@ import logging
 import math
 import re
 import struct
+import uuid
 from pathlib import Path
 
 import httpx
@@ -175,8 +176,10 @@ def ingest(agent_id: int, file_name: str, file_path: str) -> int:
 
     points = []
     for idx, chunk in enumerate(chunks):
+        # Qdrant point ID 仅支持无符号整数或 UUID；UUID v5 确定性生成，
+        # 同名文件重复入库命中相同 ID 幂等覆盖（与旧字符串 ID 语义一致）
         points.append({
-            "id": f"{agent_id}:{file_name}:{idx}",
+            "id": str(uuid.uuid5(uuid.NAMESPACE_URL, f"af:{agent_id}:{file_name}:{idx}")),
             "vector": embed(chunk),
             "payload": {"agentId": agent_id, "file": file_name, "chunkIndex": idx,
                         "content": chunk},
@@ -195,9 +198,10 @@ def search(agent_id: int, query: str, top_k: int = 4) -> list[dict]:
     except Exception:  # noqa: BLE001 - collection 不存在视为无知识
         return []
 
-    hits = client.search(collection_name=name, query_vector=embed(query), limit=top_k)
+    # qdrant-client >= 1.13 移除 search()，改用 query_points()
+    res = client.query_points(collection_name=name, query=embed(query), limit=top_k)
     return [{"file": h.payload.get("file", ""), "content": h.payload.get("content", ""),
-             "score": h.score} for h in hits]
+             "score": h.score} for h in res.points]
 
 
 def delete_file(agent_id: int, file_name: str) -> int:

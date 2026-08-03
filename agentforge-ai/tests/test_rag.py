@@ -6,7 +6,7 @@
 import pytest
 
 from app.core.config import settings
-from app.services import rag_service
+from app.services import agent_runtime, rag_service
 
 
 # ---------------- 切分 ----------------
@@ -83,6 +83,7 @@ class TestEmbedRemote:
 
         class FakeResp:
             status_code = 200
+            headers = {"content-type": "application/json"}
 
             def json(self):
                 return {"data": [{"embedding": [0.1] * 768}]}  # 模型实际 768 维
@@ -97,6 +98,7 @@ class TestEmbedRemote:
         class FakeResp:
             status_code = 404
             text = "model not found"
+            headers = {"content-type": "application/json"}
 
             def json(self):
                 return {"error": {"message": "model 'bge-m3' not found, try pulling it first"}}
@@ -152,7 +154,7 @@ class TestPrepareChatDegradation:
     def test_empty_knowledge_base_degrades(self, monkeypatch):
         """空知识库（无命中）→ 消息序列不携带上下文，正常对话。"""
         monkeypatch.setattr(rag_service, "search", lambda *a, **k: [])
-        messages, tool_calls, sources = rag_service.prepare_chat(
+        messages, tool_calls, sources = agent_runtime.prepare_chat(
             agent_id=1, message="你好", tools=[])
         assert "附加上下文" not in messages[-1]["content"]
         assert sources == []
@@ -162,7 +164,7 @@ class TestPrepareChatDegradation:
         def boom(*a, **k):
             raise RuntimeError("Qdrant 不可用")
         monkeypatch.setattr(rag_service, "search", boom)
-        messages, tool_calls, sources = rag_service.prepare_chat(
+        messages, tool_calls, sources = agent_runtime.prepare_chat(
             agent_id=1, message="你好", tools=[])
         assert "附加上下文" not in messages[-1]["content"]
         assert sources == []
@@ -171,9 +173,37 @@ class TestPrepareChatDegradation:
         """命中知识库 → 上下文注入 + 来源含片段与分数。"""
         monkeypatch.setattr(rag_service, "search",
                             lambda *a, **k: [{"file": "指南.md", "content": "片段内容", "score": 0.9}])
-        messages, tool_calls, sources = rag_service.prepare_chat(
+        messages, tool_calls, sources = agent_runtime.prepare_chat(
             agent_id=1, message="如何配置", tools=[])
         assert "附加上下文" in messages[-1]["content"]
         assert sources[0]["file"] == "指南.md"
         assert sources[0]["snippet"] == "片段内容"
         assert sources[0]["score"] == 0.9
+
+
+# ---------------- 入库 point ID 回归 ----------------
+
+class TestIngestPointId:
+    def test_point_ids_are_valid_uuids(self, monkeypatch):
+        """Qdrant 新版本要求 point ID 为无符号整数或 UUID（回归：字符串 ID 被拒）。"""
+        import uuid as uuid_mod
+        from app.services import rag_service as mod
+
+        class FakeClient:
+            def __init__(self):
+                self.upserted = []
+
+            def upsert(self, collection_name, points):
+                self.upserted.extend(points)
+
+        client = FakeClient()
+        monkeypatch.setattr(mod, "_get_qdrant", lambda: client)
+        monkeypatch.setattr(mod, "_ensure_collection", lambda *a, **k: None)
+        monkeypatch.setattr(mod, "parse_file", lambda p: "测试内容" * 200)
+        monkeypatch.setattr(mod, "embed", lambda t: [0.1] * settings.embedding_dim)
+
+        count = mod.ingest(1, "a.md", "/tmp/x.md")
+        assert count == len(client.upserted)
+        assert count > 1  # 长文本切出多个分块
+        for point in client.upserted:
+            uuid_mod.UUID(point["id"])  # 非法 UUID 会抛 ValueError

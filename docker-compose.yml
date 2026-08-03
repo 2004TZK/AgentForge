@@ -69,6 +69,9 @@ services:
       - agentforge-ollama-data:/root/.ollama
     ports:
       - "11434:11434"                       # 仅开发需要，可注释
+    environment:
+      # CPU 部署内存紧张，模型常驻避免反复冷加载（qwen2.5:7b 冷加载约 5 分钟）
+      OLLAMA_KEEP_ALIVE: ${OLLAMA_KEEP_ALIVE:-30m}
     healthcheck:
       test: ["CMD", "ollama", "list"]
       interval: 10s
@@ -84,6 +87,9 @@ services:
     container_name: agentforge-ollama-init
     entrypoint: ["/bin/sh", "-c"]
     command: ["ollama pull bge-m3 && ollama pull qwen2.5:7b && echo 'ollama models ready'"]
+    environment:
+      # ollama CLI 默认连容器内 localhost，需指向服务容器
+      OLLAMA_HOST: http://ollama:11434
     volumes:
       - agentforge-ollama-data:/root/.ollama
     depends_on:
@@ -99,7 +105,9 @@ services:
       # 决策 v1.2：全部本地模型（Ollama），本地模型无需 API Key
       LLM_API_KEY: ${LLM_API_KEY:-}
       LLM_BASE_URL: ${LLM_BASE_URL:-http://ollama:11434/v1}
+      LLM_LOCAL: ${LLM_LOCAL:-true}
       LLM_MODEL: ${LLM_MODEL:-qwen2.5:7b}
+      LLM_TIMEOUT_SECONDS: ${LLM_TIMEOUT_SECONDS:-300}
       EMBEDDING_BASE_URL: ${EMBEDDING_BASE_URL:-http://ollama:11434/v1}
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-bge-m3}
       EMBEDDING_DIM: ${EMBEDDING_DIM:-1024}
@@ -138,6 +146,8 @@ services:
       AGENTFORGE_JWT_EXPIRE_HOURS: ${JWT_EXPIRE_HOURS:-24}
       AGENTFORGE_AI_BASE_URL: http://ai:8000
       AGENTFORGE_AI_INTERNAL_TOKEN: ${INTERNAL_TOKEN:-dev-internal-token}
+      AGENTFORGE_AI_CONNECT_TIMEOUT_MS: ${AGENTFORGE_AI_CONNECT_TIMEOUT_MS:-5000}
+      AGENTFORGE_AI_READ_TIMEOUT_MS: ${AGENTFORGE_AI_READ_TIMEOUT_MS:-600000}
       AGENTFORGE_UPLOAD_DIR: /data/uploads
     volumes:
       - agentforge-uploads:/data/uploads

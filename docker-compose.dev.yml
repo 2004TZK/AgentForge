@@ -65,6 +65,9 @@ services:
     container_name: agentforge-dev-ollama
     ports:
       - "11434:11434"
+    environment:
+      # CPU 部署内存紧张，模型常驻避免反复冷加载（qwen2.5:7b 冷加载约 5 分钟）
+      OLLAMA_KEEP_ALIVE: ${OLLAMA_KEEP_ALIVE:-30m}
     volumes:
       - agentforge-dev-ollama-data:/root/.ollama
     healthcheck:
@@ -81,6 +84,9 @@ services:
     container_name: agentforge-dev-ollama-init
     entrypoint: ["/bin/sh", "-c"]
     command: ["ollama pull bge-m3 && ollama pull qwen2.5:7b && echo 'ollama models ready'"]
+    environment:
+      # ollama CLI 默认连容器内 localhost，需指向服务容器
+      OLLAMA_HOST: http://ollama:11434
     volumes:
       - agentforge-dev-ollama-data:/root/.ollama
     depends_on:

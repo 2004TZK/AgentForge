@@ -74,6 +74,7 @@ CREATE TABLE `conversation` (
   `session_id`        BIGINT,
   `user_message`      CLOB,
   `assistant_message` CLOB,
+  `sources`           CLOB,
   `deleted`           TINYINT NOT NULL DEFAULT 0,
   `created_time`      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_time`      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP

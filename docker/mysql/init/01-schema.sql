@@ -108,6 +108,7 @@ CREATE TABLE IF NOT EXISTS `conversation` (
   `session_id`        BIGINT UNSIGNED NULL                    COMMENT '会话ID（NULL=旧版数据）',
   `user_message`      TEXT            NULL                    COMMENT '用户消息',
   `assistant_message` TEXT            NULL                    COMMENT '助手回复',
+  `sources`           JSON            NULL                    COMMENT '引用来源 [{file,snippet,score}]（M2 起，旧数据为 NULL）',
   `deleted`           TINYINT(1)      NOT NULL DEFAULT 0      COMMENT '逻辑删除',
   `created_time`      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_time`      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',

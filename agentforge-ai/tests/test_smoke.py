@@ -24,9 +24,11 @@ def test_chat_requires_token():
 
 
 def test_chat_mock_mode(monkeypatch):
-    # 默认配置已切本地 Ollama（localhost 视为可用）；Mock 测试需指向非本地地址
+    # 默认配置已切本地 Ollama（LLM_LOCAL 视为可用）；Mock 测试需指向非本地地址并关闭本地标记
+    from app.core.config import settings
     from app.services.llm import llm_client
     monkeypatch.setattr(llm_client, "base_url", "https://api.example.com")
+    monkeypatch.setattr(settings, "llm_local", False)
     resp = client.post("/agent/chat",
                        json={"agentId": 1, "message": "你好"},
                        headers={"X-Internal-Token": TOKEN})

@@ -16,8 +16,9 @@ class Settings(BaseSettings):
     # ---- LLM（OpenAI 兼容，决策 v1.2：本地 Ollama qwen2.5:7b，本地模型无需 Key） ----
     llm_api_key: str = ""                    # 本地模型留空；远端模型（如 DeepSeek）需填写
     llm_base_url: str = "http://localhost:11434/v1"
+    llm_local: bool = True                   # 本地模型（Ollama）无需 Key 即可调用；远端模型请置 False
     llm_model: str = "qwen2.5:7b"
-    llm_timeout_seconds: int = 60
+    llm_timeout_seconds: int = 300            # CPU 本地推理较慢（首 token 需加载模型），放宽到 5 分钟
     sse_ping_interval_seconds: int = 10      # SSE 无事件超过该间隔时发送保活注释帧
 
     # ---- Embedding（OpenAI 兼容 /embeddings，决策 v1.2：本地 bge-m3） ----

@@ -28,6 +28,11 @@ spring:
       max-file-size: 20MB
       max-request-size: 20MB
 
+  mvc:
+    async:
+      # SSE 流式：CPU 本地推理慢（qwen2.5:7b 生成可达数分钟），async 请求放宽到 10 分钟
+      request-timeout: ${SPRING_MVC_ASYNC_REQUEST_TIMEOUT_MS:600000}
+
 mybatis-plus:
   global-config:
     banner: false
@@ -50,7 +55,8 @@ agentforge:
     base-url: ${AGENTFORGE_AI_BASE_URL:http://localhost:8000}
     internal-token: ${AGENTFORGE_AI_INTERNAL_TOKEN:dev-internal-token}
     connect-timeout-ms: ${AGENTFORGE_AI_CONNECT_TIMEOUT_MS:5000}
-    read-timeout-ms: ${AGENTFORGE_AI_READ_TIMEOUT_MS:60000}
+    # CPU 本地推理较慢（qwen2.5:7b 冷加载约 5 分钟），读取放宽到 10 分钟
+    read-timeout-ms: ${AGENTFORGE_AI_READ_TIMEOUT_MS:600000}
   upload:
     dir: ${AGENTFORGE_UPLOAD_DIR:./data/uploads}
 

@@ -30,10 +30,11 @@ class LLMClient:
 
     @property
     def available(self) -> bool:
-        """本地模型（如 Ollama）不配置 API Key 也可调用；远端模型仍需 Key。"""
+        """本地模型（如 Ollama）不配置 API Key 也可调用；远端模型仍需 Key。
+        容器内 base_url 可能是服务名（如 http://ollama:11434/v1），故以 LLM_LOCAL 显式标记本地部署。"""
         if self.api_key:
             return True
-        return "localhost" in self.base_url or "127.0.0.1" in self.base_url
+        return settings.llm_local and bool(self.base_url)
 
     def chat(self, messages: list[dict], temperature: float = 0.7) -> str:
         """同步调用 chat/completions，返回回答文本。"""

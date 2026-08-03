@@ -31,7 +31,8 @@ public class SessionServiceImpl implements SessionService {
                         new LambdaQueryWrapper<Session>()
                                 .eq(Session::getAgentId, agentId)
                                 .eq(Session::getUserId, userId)
-                                .orderByDesc(Session::getUpdatedTime))
+                                .orderByDesc(Session::getUpdatedTime)
+                                .orderByDesc(Session::getId))  // 同秒创建时以 ID 倒序稳定排序
                 .stream()
                 .map(this::toVO)
                 .toList();

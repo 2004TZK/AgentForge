@@ -31,7 +31,7 @@
 |---|---|---|
 | POST | /chat | 发送消息 `{agentId, sessionId, message}` → ChatVO `{answer, sources[], toolCalls[]}`（同步） |
 | POST | /chat/stream | 发送消息（SSE 流式回答，见下方事件协议） |
-| GET | /chat/history?agentId&sessionId&page&size | 历史分页（倒序，按会话隔离）→ PageResult\<ConversationVO\> |
+| GET | /chat/history?agentId&sessionId&page&size | 历史分页（倒序，按会话隔离）→ PageResult\<ConversationVO\>（含 `sources[]` 引用，M2 起落库可回溯） |
 | GET | /chat/session/list?agentId | 会话列表（按最后活跃倒序）→ SessionVO[] |
 | POST | /chat/session | 新建会话 `{agentId, name?}`（默认「新会话」，首条消息自动命名） |
 | DELETE | /chat/session/{id} | 删除会话（逻辑删除，消息历史保留） |
