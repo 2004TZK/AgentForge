@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     llm_base_url: str = "http://localhost:11434/v1"
     llm_local: bool = True                   # 本地模型（Ollama）无需 Key 即可调用；远端模型请置 False
     llm_model: str = "qwen2.5:7b"
+    llm_think: bool = False                  # 本地推理模型（如 qwen3.5）默认思考模式极慢，默认关闭；需要深度推理可置 True
     llm_timeout_seconds: int = 300            # CPU 本地推理较慢（首 token 需加载模型），放宽到 5 分钟
     sse_ping_interval_seconds: int = 10      # SSE 无事件超过该间隔时发送保活注释帧
 

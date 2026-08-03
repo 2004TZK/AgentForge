@@ -87,7 +87,7 @@ services:
     image: ollama/ollama:latest
     container_name: agentforge-ollama-init
     entrypoint: ["/bin/sh", "-c"]
-    command: ["ollama pull bge-m3 && ollama pull qwen2.5:7b && echo 'ollama models ready'"]
+    command: ["ollama pull bge-m3 && ollama pull qwen3.5:0.8b && echo 'ollama models ready'"]
     environment:
       # ollama CLI 默认连容器内 localhost，需指向服务容器
       OLLAMA_HOST: http://ollama:11434
@@ -107,7 +107,8 @@ services:
       LLM_API_KEY: ${LLM_API_KEY:-}
       LLM_BASE_URL: ${LLM_BASE_URL:-http://ollama:11434/v1}
       LLM_LOCAL: ${LLM_LOCAL:-true}
-      LLM_MODEL: ${LLM_MODEL:-qwen2.5:7b}
+      LLM_MODEL: ${LLM_MODEL:-qwen3.5:0.8b}
+      LLM_THINK: ${LLM_THINK:-false}
       LLM_TIMEOUT_SECONDS: ${LLM_TIMEOUT_SECONDS:-300}
       EMBEDDING_BASE_URL: ${EMBEDDING_BASE_URL:-http://ollama:11434/v1}
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-bge-m3}
