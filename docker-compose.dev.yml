@@ -69,7 +69,7 @@ services:
       # CPU 部署内存紧张，模型常驻避免反复冷加载（qwen2.5:7b 冷加载约 5 分钟）
       OLLAMA_KEEP_ALIVE: ${OLLAMA_KEEP_ALIVE:-30m}
     volumes:
-      - agentforge-dev-ollama-data:/root/.ollama
+      - ${OLLAMA_DATA_DIR:-D:/ollama}:/root/.ollama
     healthcheck:
       test: ["CMD", "ollama", "list"]
       interval: 10s
@@ -88,7 +88,7 @@ services:
       # ollama CLI 默认连容器内 localhost，需指向服务容器
       OLLAMA_HOST: http://ollama:11434
     volumes:
-      - agentforge-dev-ollama-data:/root/.ollama
+      - ${OLLAMA_DATA_DIR:-D:/ollama}:/root/.ollama
     depends_on:
       ollama: { condition: service_healthy }
     networks: [agentforge-dev-net]
@@ -103,4 +103,3 @@ volumes:
   agentforge-dev-mysql-data:
   agentforge-dev-redis-data:
   agentforge-dev-qdrant-data:
-  agentforge-dev-ollama-data:

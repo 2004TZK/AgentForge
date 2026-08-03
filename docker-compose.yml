@@ -66,7 +66,8 @@ services:
     image: ollama/ollama:latest
     container_name: agentforge-ollama
     volumes:
-      - agentforge-ollama-data:/root/.ollama
+      # 模型目录直接挂载宿主机（可跨容器共享，便于备份/迁移）
+      - ${OLLAMA_DATA_DIR:-D:/ollama}:/root/.ollama
     ports:
       - "11434:11434"                       # 仅开发需要，可注释
     environment:
@@ -91,7 +92,7 @@ services:
       # ollama CLI 默认连容器内 localhost，需指向服务容器
       OLLAMA_HOST: http://ollama:11434
     volumes:
-      - agentforge-ollama-data:/root/.ollama
+      - ${OLLAMA_DATA_DIR:-D:/ollama}:/root/.ollama
     depends_on:
       ollama: { condition: service_healthy }
     networks: [agentforge-net]
@@ -196,5 +197,4 @@ volumes:
   agentforge-mysql-data:
   agentforge-redis-data:
   agentforge-qdrant-data:
-  agentforge-ollama-data:      # Ollama 模型持久化（bge-m3 / qwen2.5:7b）
   agentforge-uploads:          # 共享文件卷：后端写入、AI 读取（RAG 解析）
