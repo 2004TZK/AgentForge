@@ -35,7 +35,7 @@ venv/
 
 # ===== Docker =====
 docker/nginx/nginx.conf.local
-docker/nginx/certs/          # HTTPS 证书（ssl-init 自动生成/复用，不提交）
+docker/nginx/certs/
 
 # ===== 数据与日志 =====
 data/
