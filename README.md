@@ -147,6 +147,7 @@ AgentForge/
 - [API 文档](docs/api.md)
 - [项目开发规划](docs/项目开发规划.md)
 - [用户使用指南](docs/user-guide.md)
+- [演示数据与操作指南](docs/demo-data.md)
 - [贡献指南](CONTRIBUTING.md) · [行为准则](CODE_OF_CONDUCT.md)
 
 ## 路线图

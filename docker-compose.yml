@@ -139,6 +139,7 @@ services:
     environment:
       # 决策 v1.2：全部本地模型（Ollama），本地模型无需 API Key
       LLM_API_KEY: ${LLM_API_KEY:-}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}           # 可选：GitHub 工具 API Token（提升限流额度）
       LLM_BASE_URL: ${LLM_BASE_URL:-http://ollama:11434/v1}
       LLM_LOCAL: ${LLM_LOCAL:-true}
       LLM_MODEL: ${LLM_MODEL:-qwen3.5:0.8b}

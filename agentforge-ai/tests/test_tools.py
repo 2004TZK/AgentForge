@@ -10,9 +10,25 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.core.config import settings
 from app.tools import registry as tool_registry
+from app.tools import calculator
 
 client = TestClient(app)
 TOKEN = settings.internal_token
+
+
+# ---------------- Calculator（Unicode 符号容错） ----------------
+
+
+class TestCalculatorUnicode:
+    def test_unicode_division_and_multiplication(self):
+        assert calculator.evaluate("(128+64)÷8") == 24.0
+        assert calculator.evaluate("3×4") == 12.0
+
+    def test_unicode_minus_and_fullwidth_parentheses(self):
+        assert calculator.evaluate("（10−3）") == 7.0
+
+    def test_ascii_still_works(self):
+        assert calculator.evaluate("2 + 3 * 4") == 14.0
 
 
 # ---------------- Schema 转换 ----------------

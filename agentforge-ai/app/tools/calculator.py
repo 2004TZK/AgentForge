@@ -10,9 +10,20 @@ _ALLOWED_BIN_OPS = {
 }
 _ALLOWED_UNARY_OPS = {ast.UAdd: operator.pos, ast.USub: operator.neg}
 
+# Unicode 数学符号 → ASCII 映射（LLM 可能输出 ÷/×/− 或全角括号）
+_UNICODE_SYMBOLS = {
+    "÷": "/",
+    "×": "*",
+    "−": "-",
+    "（": "(",
+    "）": ")",
+}
+
 
 def evaluate(expression: str) -> float:
     """求值算术表达式，如 '2 + 3 * 4'。非法表达式抛 ValueError。"""
+    for src, dst in _UNICODE_SYMBOLS.items():
+        expression = expression.replace(src, dst)
     try:
         tree = ast.parse(expression, mode="eval")
         return _eval_node(tree.body)
