@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS `agent_tool` (
 CREATE TABLE IF NOT EXISTS `model_provider` (
   `id`            BIGINT       NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `name`          VARCHAR(100) NOT NULL,
-  `provider_type` VARCHAR(20)  NOT NULL DEFAULT 'ollama',
+  `provider_type` VARCHAR(20)  NOT NULL DEFAULT 'openai',
   `base_url`      VARCHAR(300) NOT NULL,
   `api_key`       VARCHAR(300),
   `models`        CLOB,
@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS `model_provider` (
 
 -- 幂等插入内置 Provider（多 Spring context 共享内存库时避免重复）
 INSERT INTO `model_provider` (`name`, `provider_type`, `base_url`, `models`, `creator_id`)
-SELECT '本地 Ollama', 'ollama', 'http://ollama:11434', '["qwen3.5:0.8b","bge-m3"]', 0
+SELECT '千问云端', 'openai', 'https://dashscope.aliyuncs.com/compatible-mode/v1', '["qwen3.7-plus","text-embedding-v3"]', 0
 WHERE NOT EXISTS (SELECT 1 FROM `model_provider` WHERE `creator_id` = 0);
 CREATE TABLE IF NOT EXISTS `document` (
   `id`           BIGINT       NOT NULL AUTO_INCREMENT PRIMARY KEY,

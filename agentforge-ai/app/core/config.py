@@ -13,20 +13,20 @@ class Settings(BaseSettings):
     app_name: str = "agentforge-ai"
     internal_token: str = "dev-internal-token"
 
-    # ---- LLM（OpenAI 兼容，决策 v1.2：本地 Ollama qwen2.5:7b，本地模型无需 Key） ----
-    llm_api_key: str = ""                    # 本地模型留空；远端模型（如 DeepSeek）需填写
-    llm_base_url: str = "http://localhost:11434/v1"
-    llm_local: bool = True                   # 本地模型（Ollama）无需 Key 即可调用；远端模型请置 False
-    llm_model: str = "qwen2.5:7b"
-    llm_think: bool = False                  # 本地推理模型（如 qwen3.5）默认思考模式极慢，默认关闭；需要深度推理可置 True
-    llm_timeout_seconds: int = 300            # CPU 本地推理较慢（首 token 需加载模型），放宽到 5 分钟
+    # ---- LLM（OpenAI 兼容，决策 v1.4：千问云端 API，无本地模型） ----
+    llm_api_key: str = ""                    # 千问/DashScope 兼容模式 API Key
+    llm_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    llm_local: bool = False                  # 默认远端模型（False）；自建 Ollama 可置 True 走原生 /api/chat
+    llm_model: str = "qwen3.7-plus"
+    llm_think: bool = False                  # 仅本地推理模型（如 qwen3.5）使用；远端模型忽略
+    llm_timeout_seconds: int = 120           # 云端推理较快，超时收敛到 2 分钟
     sse_ping_interval_seconds: int = 10      # SSE 无事件超过该间隔时发送保活注释帧
 
-    # ---- Embedding（OpenAI 兼容 /embeddings，决策 v1.2：本地 bge-m3） ----
+    # ---- Embedding（OpenAI 兼容 /embeddings，决策 v1.4：千问 text-embedding-v3） ----
     embedding_base_url: str = ""             # 缺省复用 llm_base_url
-    embedding_api_key: str = ""              # 本地模型留空
-    embedding_model: str = ""                # 如 bge-m3；未配置走本地哈希 Mock（降级）
-    embedding_dim: int = 1024                # 与模型维度一致（bge-m3=1024）
+    embedding_api_key: str = ""              # 缺省复用 llm_api_key
+    embedding_model: str = "text-embedding-v3"  # 未配置走本地哈希 Mock（降级）
+    embedding_dim: int = 1024                # text-embedding-v3 可选 768/1024/1536，此处取 1024
 
     # ---- Qdrant ----
     qdrant_host: str = "localhost"

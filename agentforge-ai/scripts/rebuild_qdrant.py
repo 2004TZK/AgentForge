@@ -1,6 +1,6 @@
 """Qdrant 集合重建脚本：删除全部（或指定）agent_* 集合。
 
-用途：EMBEDDING_DIM 变更（如 bge-m3 1024 维 vs nomic-embed-text 768 维）后，
+用途：EMBEDDING_DIM 变更（如 text-embedding-v3 1024 维 vs 其他模型 768 维）后，
 旧集合维度与配置不符会导致入库报错，需删除后由下一次入库自动重建。
 
 用法（在 agentforge-ai 目录下）：

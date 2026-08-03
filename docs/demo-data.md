@@ -74,7 +74,7 @@ Spring Bean 的生命周期是怎样的？
 - **多会话**：任一 Agent 下点"＋新建"创建独立会话，历史互不混淆
 - **文件管理**：文件页选中 Agent B，可查看/重试/删除 `spring-notes.md`（删除会同时移除向量）
 - **智能体配置**：编辑 Agent A 可查看工具 Schema 表单（calculator / github 的配置项）
-- **模型管理**：顶部"模型"页可查看内置 Ollama Provider，或新增云端 Provider（如 DeepSeek）
+- **模型管理**：顶部"模型"页可查看内置千问云端 Provider，或新增其他 OpenAI 兼容云端 Provider
 - **Agent 可见性**：Agent 详情/编辑中的 PUBLIC / PRIVATE 决定他人是否可见
 
 ---

@@ -207,7 +207,7 @@ def main() -> None:
         "description": "资深 Java 工程师，擅长 Spring Boot 与工具调用",
         "systemPrompt": "你是一名资深 Java 工程师，帮助用户解决 Java 与 Spring Boot 问题。"
                         "回答简洁、附代码示例；需要计算时调用计算器工具。",
-        "modelName": "qwen3.5:0.8b",
+        "modelName": "qwen3.7-plus",
         "temperature": 0.7,
         "tools": [
             {"toolName": "calculator", "toolConfig": {}, "enabled": True},
@@ -223,7 +223,7 @@ def main() -> None:
         "name": "知识库助手",
         "description": "基于 Spring 知识库回答问题的助手",
         "systemPrompt": "你是知识库问答助手。只依据提供的资料回答；资料不足时如实说明，不要编造。",
-        "modelName": "qwen3.5:0.8b",
+        "modelName": "qwen3.7-plus",
         "temperature": 0.3,
         "tools": [],
         "mode": "chat",
@@ -238,7 +238,7 @@ def main() -> None:
         "name": "GitHub 分析官",
         "description": "绑定工作流的分析助手：自动完成查仓库→算指标→出报告",
         "systemPrompt": "你是 GitHub 项目分析官。收到需求后运行绑定的工作流完成项目分析。",
-        "modelName": "qwen3.5:0.8b",
+        "modelName": "qwen3.7-plus",
         "temperature": 0.5,
         "tools": [],
         "mode": "workflow",

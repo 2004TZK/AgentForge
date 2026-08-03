@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/Vue-3-brightgreen" alt="Vue">
 </p>
 
-AgentForge 是一个全本地、可离线演示的 LLM Agent 平台：创建智能体（系统提示词 / 模型 / 工具 / 运行模式）、与支持 **LLM 自主工具调用（ReAct 循环）** 和 **RAG 知识库** 的 Agent 对话，或把 Agent 切换为 **工作流模式** 执行自定义流程（查仓库 → 算指标 → 生成报告）。模型完全跑在本地 Ollama（对话 qwen3.5:0.8b + 向量 bge-m3），零 API 费用、可离线演示。
+AgentForge 是一个开源的 LLM Agent 构建平台：创建智能体（系统提示词 / 模型 / 工具 / 运行模式）、与支持 **LLM 自主工具调用（ReAct 循环）** 和 **RAG 知识库** 的 Agent 对话，或把 Agent 切换为 **工作流模式** 执行自定义流程（查仓库 → 算指标 → 生成报告）。模型层通过 OpenAI 兼容接口接入**千问云端 API**（对话 qwen3.7-plus + 向量 text-embedding-v3），无需本地 GPU/大内存，响应快、部署轻。
 
 ## 功能特性
 
@@ -18,7 +18,7 @@ AgentForge 是一个全本地、可离线演示的 LLM Agent 平台：创建智�
 |---|---|
 | 🤖 智能体 | 系统提示词 / 模型 / 温度 / **公开-私有可见性** / 工具按 Schema 配置（API Key 密码框） |
 | 🔧 工具调用 | LLM 依据 JSON Schema **自主决策**（OpenAI 兼容 tools 参数），LangGraph **ReAct 多轮循环**（上限 3 轮），SSE 实时展示工具活动；规则触发保留兜底 |
-| 📚 RAG 知识库 | 上传（pdf/docx/txt/md）→ 解析 → bge-m3 Embedding → Qdrant 检索 → **来源引用**；文件管理（重试/删除/同名覆盖） |
+| 📚 RAG 知识库 | 上传（pdf/docx/txt/md）→ 解析 → text-embedding-v3 Embedding → Qdrant 检索 → **来源引用**；文件管理（重试/删除/同名覆盖） |
 | 📜 Workflow v1 | YAML/JSON 线性流程（tool/llm 节点 + `{var}` 模板）→ LangGraph 编译执行 → **节点级日志**；Agent 对话模式/工作流模式 |
 | 💬 对话 | SSE 流式打字机、多会话、Redis 短期记忆（**按用户隔离**，TTL 24h，自动降级）、历史分页 |
 | 🔐 权限 | JWT 认证、Agent 创建者隔离（改/删）、私有资源不可见（10003） |
@@ -52,21 +52,22 @@ AgentForge 是一个全本地、可离线演示的 LLM Agent 平台：创建智�
                └──┬───────┬──────┬───┘  └──┬───────┬──────┬───────┘
                   │       │      │         │       │      │
              ┌────▼──┐ ┌──▼───┐ ┌▼────┐  ┌─▼────┐ ┌─▼────┐ ┌▼──────┐
-             │ MySQL │ │Redis │ │Qdrant│  │Ollama │ │Redis │ │Qdrant │
-             │ 8     │ │ 7    │ │     │  │qwen3.5│ │      │ │ bge-m3│
-             └───────┘ └──────┘ └─────┘  └──────┘ └──────┘ └───────┘
+             │ MySQL │ │Redis │ │Qdrant│  │千问云端│ │Redis │ │Qdrant │
+             │ 8     │ │ 7    │ │     │  │API    │ │      │ │       │
+             └───────┘ └──────┘ └─────┘  └───────┘ └──────┘ └───────┘
 ```
-> AI 服务与后端不暴露宿主机端口，全部经 Nginx 内网代理；`migrate` 容器在启动时自动应用数据库迁移（幂等）。
+> AI 服务与后端不暴露宿主机端口，全部经 Nginx 内网代理；LLM 与 Embedding 调用千问云端 API（OpenAI 兼容）；`migrate` 容器在启动时自动应用数据库迁移（幂等）。
 
 ## 快速开始
 
-> 前置：Docker + Docker Compose。30 分钟内即可从零复现一键部署。
+> 前置：Docker + Docker Compose + 千问云端 API Key（platform.qianwenai.com 申请）。30 分钟内即可从零复现一键部署。
 
 ```bash
 # 1. 准备环境变量（修改默认密码与密钥）
 cp .env.example .env
+#    编辑 .env，填入 LLM_API_KEY=sk-xxxx（千问/DashScope 兼容模式 Key）
 
-# 2. 一键启动（首次自动拉取模型 bge-m3 + qwen3.5:0.8b，约需数分钟）
+# 2. 一键启动
 docker compose up -d --build
 
 # 3. 访问
@@ -123,7 +124,8 @@ cd agentforge-web && npm run build                            # 前端生产构�
 | agentforge-web | Vue 3 + TypeScript + Vite + Pinia | SPA（Element Plus 按需引入，主包 <10KB） |
 | agentforge-backend | Spring Boot 3.3（Java 21）+ MyBatis Plus + Spring Security/JWT + Redis | 8 模块 Maven 架构 |
 | agentforge-ai | Python 3.12 + FastAPI + LangGraph + Qdrant + Redis | 对话 / RAG / 工具循环 / 工作流引擎 |
-| 中间件 | MySQL 8 / Redis 7 / Qdrant / Ollama（qwen3.5:0.8b + bge-m3） | Docker Compose 一键启动 |
+| 中间件 | MySQL 8 / Redis 7 / Qdrant | Docker Compose 一键启动 |
+| 模型 | 千问云端（对话 qwen3.7-plus + 向量 text-embedding-v3，OpenAI 兼容） | DashScope 兼容模式 API |
 
 ## 目录结构
 

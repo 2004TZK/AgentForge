@@ -26,15 +26,15 @@ class ModelProviderIntegrationTest extends IntegrationTestBase {
     private ObjectMapper objectMapper;
 
     @Test
-    @DisplayName("列表包含系统内置 Ollama，创建后本人可见")
+    @DisplayName("列表包含系统内置千问云端，创建后本人可见")
     void listContainsBuiltin() throws Exception {
         String token = registerAndLogin("alice");
         mockMvc.perform(get("/model/providers")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0))
-                .andExpect(jsonPath("$.data[0].name").value("本地 Ollama"))
-                .andExpect(jsonPath("$.data[0].providerType").value("ollama"))
+                .andExpect(jsonPath("$.data[0].name").value("千问云端"))
+                .andExpect(jsonPath("$.data[0].providerType").value("openai"))
                 .andExpect(jsonPath("$.data[0].creatorId").value(0));
     }
 

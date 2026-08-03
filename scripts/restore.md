@@ -29,6 +29,5 @@ curl -X POST http://localhost:6333/collections/<集合名>/snapshots/recover \
 
 ## 备注
 
-- Ollama 模型目录挂载在宿主机 `D:/ollama`（或 `.env` 的 `OLLAMA_DATA_DIR`），
-  备份/迁移只需拷贝该目录。
+- 模型层使用千问云端 API（决策 v1.4），无本地模型目录，无需备份模型文件。
 - Redis 短期记忆（TTL 24h）无需备份。

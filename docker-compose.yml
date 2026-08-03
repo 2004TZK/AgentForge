@@ -1,9 +1,10 @@
 # ============================================================
 # AgentForge 一键启动（生产/演示形态）
-# 11 个服务：mysql redis qdrant ollama ollama-init migrate ssl-init ai backend web nginx
+# 9 个服务：mysql redis qdrant migrate ssl-init ai backend web nginx
 # 使用：cp .env.example .env && docker compose up -d --build
 # M4：migrate 自动应用数据库迁移；ssl-init 自动生成 HTTPS 证书；
 #     全局日志限额 + 各服务资源上限（见下方 x-logging / deploy）
+# 决策 v1.4：LLM 与 Embedding 全部走千问云端 API，无本地模型/Ollama 容器
 # ============================================================
 
 name: agentforge
@@ -85,68 +86,20 @@ services:
         limits:
           memory: 1g
 
-  # ---------- Ollama（本地模型：bge-m3 向量 + qwen3.5:0.8b 对话） ----------
-  ollama:
-    image: ollama/ollama:latest
-    container_name: agentforge-ollama
-    volumes:
-      # 模型目录直接挂载宿主机（可跨容器共享，便于备份/迁移）
-      - ${OLLAMA_DATA_DIR:-D:/ollama}:/root/.ollama
-    ports:
-      - "11434:11434"                       # 仅开发需要，可注释
-    environment:
-      # CPU 部署内存紧张，模型常驻避免反复冷加载（qwen2.5:7b 冷加载约 5 分钟）
-      OLLAMA_KEEP_ALIVE: ${OLLAMA_KEEP_ALIVE:-30m}
-    healthcheck:
-      test: ["CMD", "ollama", "list"]
-      interval: 10s
-      timeout: 5s
-      retries: 12
-      start_period: 20s
-    networks: [agentforge-net]
-    restart: unless-stopped
-    logging: *default-logging
-    deploy:
-      resources:
-        limits:
-          memory: 4g
-
-  # 一次性预拉模型（模型持久化在共享卷；拉取失败可换镜像源或 nomic-embed-text 兜底）
-  ollama-init:
-    image: ollama/ollama:latest
-    container_name: agentforge-ollama-init
-    entrypoint: ["/bin/sh", "-c"]
-    command: ["ollama pull bge-m3 && ollama pull qwen3.5:0.8b && echo 'ollama models ready'"]
-    environment:
-      # ollama CLI 默认连容器内 localhost，需指向服务容器
-      OLLAMA_HOST: http://ollama:11434
-    volumes:
-      - ${OLLAMA_DATA_DIR:-D:/ollama}:/root/.ollama
-    depends_on:
-      ollama: { condition: service_healthy }
-    networks: [agentforge-net]
-    restart: "no"
-    logging: *default-logging
-    deploy:
-      resources:
-        limits:
-          memory: 256m
-
   # ---------- AI 服务（仅内网，不暴露宿主机） ----------
   ai:
     build: ./agentforge-ai
     container_name: agentforge-ai
     environment:
-      # 决策 v1.2：全部本地模型（Ollama），本地模型无需 API Key
+      # 决策 v1.4：千问云端 API（OpenAI 兼容），需 LLM_API_KEY
       LLM_API_KEY: ${LLM_API_KEY:-}
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}           # 可选：GitHub 工具 API Token（提升限流额度）
-      LLM_BASE_URL: ${LLM_BASE_URL:-http://ollama:11434/v1}
-      LLM_LOCAL: ${LLM_LOCAL:-true}
-      LLM_MODEL: ${LLM_MODEL:-qwen3.5:0.8b}
-      LLM_THINK: ${LLM_THINK:-false}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1}
+      LLM_LOCAL: ${LLM_LOCAL:-false}
+      LLM_MODEL: ${LLM_MODEL:-qwen3.7-plus}
       LLM_TIMEOUT_SECONDS: ${LLM_TIMEOUT_SECONDS:-300}
-      EMBEDDING_BASE_URL: ${EMBEDDING_BASE_URL:-http://ollama:11434/v1}
-      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-bge-m3}
+      EMBEDDING_BASE_URL: ${EMBEDDING_BASE_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-v3}
       EMBEDDING_DIM: ${EMBEDDING_DIM:-1024}
       QDRANT_HOST: qdrant
       QDRANT_PORT: "6333"
@@ -159,7 +112,6 @@ services:
     depends_on:
       redis: { condition: service_healthy }
       qdrant: { condition: service_healthy }
-      ollama: { condition: service_healthy }
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 10s

@@ -1,5 +1,5 @@
 # ============================================================
-# AgentForge 本地开发形态：仅启动中间件
+# AgentForge 本地开发形态：仅启动中间件（决策 v1.4：无 Ollama，模型走云端 API）
 # 三端本地开发：
 #   后端    mvn -pl agentforge-start -am spring-boot:run（直连 localhost 中间件）
 #   AI 服务 uvicorn app.main:app --port 8000 --reload
@@ -58,41 +58,6 @@ services:
       retries: 20
       start_period: 10s
     networks: [agentforge-dev-net]
-
-  # Ollama 本地模型（bge-m3 向量 + qwen2.5:7b 对话），开发环境与一键部署共用
-  ollama:
-    image: ollama/ollama:latest
-    container_name: agentforge-dev-ollama
-    ports:
-      - "11434:11434"
-    environment:
-      # CPU 部署内存紧张，模型常驻避免反复冷加载（qwen2.5:7b 冷加载约 5 分钟）
-      OLLAMA_KEEP_ALIVE: ${OLLAMA_KEEP_ALIVE:-30m}
-    volumes:
-      - ${OLLAMA_DATA_DIR:-D:/ollama}:/root/.ollama
-    healthcheck:
-      test: ["CMD", "ollama", "list"]
-      interval: 10s
-      timeout: 5s
-      retries: 12
-      start_period: 20s
-    networks: [agentforge-dev-net]
-
-  # 一次性预拉模型（失败可换镜像源或 nomic-embed-text 兜底）
-  ollama-init:
-    image: ollama/ollama:latest
-    container_name: agentforge-dev-ollama-init
-    entrypoint: ["/bin/sh", "-c"]
-    command: ["ollama pull bge-m3 && ollama pull qwen2.5:7b && echo 'ollama models ready'"]
-    environment:
-      # ollama CLI 默认连容器内 localhost，需指向服务容器
-      OLLAMA_HOST: http://ollama:11434
-    volumes:
-      - ${OLLAMA_DATA_DIR:-D:/ollama}:/root/.ollama
-    depends_on:
-      ollama: { condition: service_healthy }
-    networks: [agentforge-dev-net]
-    restart: "no"
 
 networks:
   agentforge-dev-net:

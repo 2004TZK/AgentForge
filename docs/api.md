@@ -31,7 +31,7 @@
 > 由后端透传 AI 服务在工具执行时注入。
 > M4 可见性：`visibility` 取值 PUBLIC（所有登录用户可见可用）/ PRIVATE（默认，仅创建者）。
 > 列表过滤私有；详情与聊天对非创建者视为不存在（10003）。
-> M4 多模型：`providerId` 绑定模型 Provider（NULL=内置 Ollama）；聊天时后端将
+> M4 多模型：`providerId` 绑定模型 Provider（NULL=内置千问云端）；聊天时后端将
 > Provider 的 {type, baseUrl, apiKey} 透传 AI 服务，按 Provider 调用对应模型。
 
 错误码：20003 非创建者操作、10003 智能体不存在、10001 参数错误。
@@ -64,7 +64,7 @@
 | error | `code`、`message` | 失败（错误码同下表）；流结束但未收到 done/error 视为连接中断 |
 
 > M3 工具调用：`toolCalls` 为展示用字符串数组（如 `calculator({"expression": "2+3*4"}) → 14`）；
-> LLM 依据工具 Schema 自主决策（OpenAI 兼容 tools 参数，本地模型与 think 并存），
+> LLM 依据工具 Schema 自主决策（OpenAI 兼容 tools 参数），
 > 最多 3 轮工具循环后强制总结；规则触发（关键字启发式）保留为兜底；工具失败转为失败文本回填，
 > 不阻断主链路。SSE 中另有 `tool` 事件实时推送每次工具执行。
 
@@ -75,7 +75,7 @@
 `ChatVO.sources` 与 done 事件的 `sources` 均为对象数组，供前端展示引用与查看片段：
 
 ```json
-[{"file": "rag.md", "snippet": "向量模型：本地 Ollama 的 bge-m3…", "score": 0.87}]
+[{"file": "rag.md", "snippet": "向量模型：千问云端 text-embedding-v3…", "score": 0.87}]
 ```
 
 ### 错误码
@@ -133,7 +133,7 @@
 > M4 多模型配置：`providerType=ollama` 走本地原生 /api/chat（think 可控），
 > `openai` 走 OpenAI 兼容 /v1/chat/completions（支持任意兼容服务如 DeepSeek）。
 > Agent 通过 `providerId` 绑定；聊天时后端透传 {type, baseUrl, apiKey} 给 AI 服务，
-> 未绑定（NULL）回落内置 Ollama。内置 Provider（creator_id=0）全局可见不可改删。
+> 未绑定（NULL）回落内置千问云端（API Key 取自 AI 服务环境变量）。内置 Provider（creator_id=0）全局可见不可改删。
 
 ## 6. 内部 AI 服务（不经 Nginx 对外，需 X-Internal-Token）
 

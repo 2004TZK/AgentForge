@@ -21,7 +21,7 @@ backend（Spring Boot 3.3 / Java 21，Maven 多模块）
 ai（FastAPI / Python 3.12）
   ├── Redis（短期记忆 memory:agent:{agentId}，TTL 24h）
   ├── Qdrant（向量，collection 按智能体隔离 agent_{agentId}）
-  └── LLM（HTTP，OpenAI 兼容：DeepSeek/Qwen/Ollama；未配置 Key 走 Mock）
+  └── LLM（HTTP，OpenAI 兼容：千问云端 Qwen / DeepSeek 等；未配置 Key 走 Mock）
 ```
 
 ## 2. 后端模块

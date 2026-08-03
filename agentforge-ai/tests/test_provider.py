@@ -18,6 +18,6 @@ class TestProviderOverride:
         assert client.available is True
 
     def test_provider_missing_falls_back_to_env(self):
-        """无 Provider 时回落环境变量（默认本地 Ollama）。"""
+        """无 Provider 时回落环境变量（决策 v1.4：默认远端千问云端）。"""
         client = LLMClient(None)
-        assert client.local is True  # settings.llm_local 默认 True（本地部署）
+        assert client.local is False  # settings.llm_local 默认 False（云端 API）
