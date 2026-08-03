@@ -30,7 +30,7 @@ function logout(): void {
         </div>
       </header>
       <main class="content">
-        <router-view />
+        <slot />
       </main>
     </div>
   </div>

@@ -1,5 +1,11 @@
 """全局配置：pydantic-settings 读取环境变量 / .env 文件，禁止硬编码。"""
+from pathlib import Path
+
 from pydantic_settings import BaseSettings
+
+# .env 固定指向 AI 服务包根目录，避免受启动/测试时工作目录影响
+# （例如从仓库根目录运行 pytest 时误加载根目录 .env）
+_ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 
 
 class Settings(BaseSettings):
@@ -36,7 +42,10 @@ class Settings(BaseSettings):
     # ---- 共享文件卷 ----
     upload_dir: str = "/data/uploads"
 
-    model_config = {"env_file": ".env", "extra": "ignore"}
+    model_config = {
+        "env_file": str(_ENV_FILE) if _ENV_FILE.exists() else None,
+        "extra": "ignore",
+    }
 
 
 settings = Settings()

@@ -22,6 +22,7 @@ public class AiChatRequest {
     private String message;
 
     /** 最近 N 轮对话历史（role: user/assistant） */
+    @Builder.Default
     private List<ChatHistoryItem> history = new ArrayList<>();
 
     /** 系统提示词 */
@@ -34,5 +35,6 @@ public class AiChatRequest {
     private BigDecimal temperature;
 
     /** 启用的工具列表（工具名） */
+    @Builder.Default
     private List<String> tools = new ArrayList<>();
 }

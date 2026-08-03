@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpResponse;
@@ -22,6 +23,9 @@ import org.springframework.web.client.RestClient;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -43,16 +47,24 @@ public class AiServiceClient {
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
+    private final String baseUrl;
+    private final String internalToken;
+    private final int connectTimeoutMs;
+    private final int readTimeoutMs;
 
     public AiServiceClient(AiGatewayProperties properties, ObjectMapper objectMapper) {
+        this.baseUrl = properties.getBaseUrl();
+        this.internalToken = properties.getInternalToken();
+        this.connectTimeoutMs = properties.getConnectTimeoutMs();
+        this.readTimeoutMs = properties.getReadTimeoutMs();
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(properties.getConnectTimeoutMs());
-        factory.setReadTimeout(properties.getReadTimeoutMs());
+        factory.setConnectTimeout(connectTimeoutMs);
+        factory.setReadTimeout(readTimeoutMs);
         this.objectMapper = objectMapper;
         this.restClient = RestClient.builder()
-                .baseUrl(properties.getBaseUrl())
+                .baseUrl(baseUrl)
                 .requestFactory(factory)
-                .defaultHeader("X-Internal-Token", properties.getInternalToken())
+                .defaultHeader("X-Internal-Token", internalToken)
                 .build();
     }
 
@@ -77,16 +89,29 @@ public class AiServiceClient {
      * 打开流式对话连接：POST /agent/chat/stream。
      * 返回原始响应（SSE 字节流由调用方透传）；连接失败抛出映射后的业务异常。
      * 注意：exchange 不会对错误状态码抛异常，调用方需自行检查状态并调用 {@link #mapAiError}。
+     * 实现说明：不能使用 RestClient.exchange 返回原始响应 —— exchange 在回调返回后会关闭响应流，
+     * 调用方读到的是已关闭的流。这里直接使用 HttpURLConnection 并适配为 ClientHttpResponse。
      */
-    public ClientHttpResponse openStream(AiChatRequest request) {
+    public ClientHttpResponse openStream(AiChatRequest request) throws IOException {
         try {
-            return restClient.post()
-                    .uri("/agent/chat/stream")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(buildBody(request))
-                    .exchange((req, res) -> res);
-        } catch (ResourceAccessException e) {
-            throw mapConnectError(e);
+            HttpURLConnection connection = (HttpURLConnection) URI.create(baseUrl + "/agent/chat/stream").toURL()
+                    .openConnection();
+            connection.setRequestMethod("POST");
+            connection.setDoOutput(true);
+            connection.setConnectTimeout(connectTimeoutMs);
+            connection.setReadTimeout(readTimeoutMs);
+            connection.setRequestProperty("Content-Type", MediaType.APPLICATION_JSON_VALUE);
+            connection.setRequestProperty("X-Internal-Token", internalToken);
+            byte[] body = objectMapper.writeValueAsBytes(buildBody(request));
+            connection.setFixedLengthStreamingMode(body.length);
+            try (OutputStream out = connection.getOutputStream()) {
+                out.write(body);
+            }
+            return new ConnectionClientHttpResponse(connection);
+        } catch (SocketTimeoutException e) {
+            throw mapConnectError(new ResourceAccessException("AI 服务连接超时", e), "AI 服务连接超时");
+        } catch (IOException e) {
+            throw mapConnectError(new ResourceAccessException("AI 服务连接失败", e));
         }
     }
 
@@ -142,7 +167,7 @@ public class AiServiceClient {
     public BusinessException mapAiError(ClientHttpResponse res, ResultCode fallback) {
         String raw = readBody(res);
         ResultCode code = fallback;
-        String message = "AI 服务返回错误状态: " + res.getStatusCode();
+        String message = "AI 服务返回错误状态: " + statusText(res);
         try {
             JsonNode node = objectMapper.readTree(raw);
             int c = node.path("code").asInt(0);
@@ -158,9 +183,18 @@ public class AiServiceClient {
                 message = m;
             }
         } catch (IOException e) {
-            log.warn("AI 服务错误响应解析失败: status={}, body={}", res.getStatusCode(), raw);
+            log.warn("AI 服务错误响应解析失败: status={}, body={}", statusText(res), raw);
         }
         return new BusinessException(code, message);
+    }
+
+    /** 安全读取 HTTP 状态码（Spring 6 的 getStatusCode 声明抛 IOException） */
+    private String statusText(ClientHttpResponse res) {
+        try {
+            return res.getStatusCode().toString();
+        } catch (IOException e) {
+            return "unknown";
+        }
     }
 
     private BusinessException mapConnectError(ResourceAccessException e) {
@@ -199,5 +233,49 @@ public class AiServiceClient {
         body.put("temperature", request.getTemperature());
         body.put("tools", request.getTools());
         return body;
+    }
+
+    /**
+     * HttpURLConnection → ClientHttpResponse 适配器：连接由调用方负责 close（disconnect）。
+     * 状态/错误流读取与 Spring 接口语义一致，供 relayStream/mapAiError 复用。
+     */
+    private static final class ConnectionClientHttpResponse implements ClientHttpResponse {
+
+        private final HttpURLConnection connection;
+        private final HttpStatusCode statusCode;
+        private final String statusText;
+
+        ConnectionClientHttpResponse(HttpURLConnection connection) throws IOException {
+            this.connection = connection;
+            this.statusCode = HttpStatusCode.valueOf(connection.getResponseCode());
+            String message = connection.getResponseMessage();
+            this.statusText = message != null ? message : "";
+        }
+
+        @Override
+        public HttpStatusCode getStatusCode() {
+            return statusCode;
+        }
+
+        @Override
+        public String getStatusText() {
+            return statusText;
+        }
+
+        @Override
+        public void close() {
+            connection.disconnect();
+        }
+
+        @Override
+        public InputStream getBody() throws IOException {
+            InputStream errorStream = connection.getErrorStream();
+            return errorStream != null ? errorStream : connection.getInputStream();
+        }
+
+        @Override
+        public HttpHeaders getHeaders() {
+            return new HttpHeaders();
+        }
     }
 }

@@ -3,6 +3,7 @@ package com.agentforge.framework.security;
 import com.agentforge.common.core.Result;
 import com.agentforge.common.core.ResultCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -44,6 +45,9 @@ public class SecurityConfig {
                 .cors(cors -> {})
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // 异步分派（SSE/StreamingResponseBody）与错误分派不做重复授权：
+                        // 授权已在首次请求完成，异步分派重新检查会丢失上下文导致 AccessDenied
+                        .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll()
                         // 公开接口
                         .requestMatchers("/auth/login", "/auth/register").permitAll()
                         // 健康检查与 API 文档
