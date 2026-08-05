@@ -47,7 +47,8 @@ function formatDegree(degree: number): string {
     <div class="chart-head">
       <span class="chart-title">本命盘排盘</span>
       <span class="chart-meta mono">
-        回归黄道{{ chart.meta.houseSystem === 'whole_sign' ? ' · 整宫制' : ' · Placidus' }}
+        {{ chart.meta.zodiac === 'sidereal' ? '恒星黄道' : '回归黄道' }}<template v-if="chart.meta.ayanamsa">（{{ chart.meta.ayanamsa }}）</template>
+        {{ chart.meta.houseSystem === 'whole_sign' ? ' · 整宫制' : ' · Placidus' }}
         · {{ chart.meta.timezone }}
         <span v-if="chart.meta.houseSystemFallback" class="chart-fallback" title="高纬度 Placidus 计算失败，已自动降级整宫制">降级</span>
       </span>
@@ -98,6 +99,7 @@ function formatDegree(degree: number): string {
           {{ p.type }}
           <template v-if="p.type === '星群' && p.scope === 'house'">· {{ p.house }}宫</template>
           <template v-else-if="p.type === '星群' && p.scope === 'sign'">· {{ p.sign }}</template>
+          <template v-else-if="p.type === 'T三角' && p.apex">· 顶点 {{ planetName(p.apex) }}</template>
           <span class="pattern-planets mono">{{ p.planets.map(planetName).join(' / ') }}</span>
         </span>
       </div>
