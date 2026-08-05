@@ -2,11 +2,13 @@
 /**
  * 聊天页：选择智能体 → 会话列表（M2 多会话）→ 发送消息（SSE 流式打字机 + 失败重试）
  * 助手回答可展示知识库引用（来源文件列表，点击查看片段）。
+ * 设计签名：助手回答是「冷却的金属」——流式输出时左缘烧成锻火橙，完成后冷却回发丝线。
  */
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppLayout from '../../components/layout/AppLayout.vue'
 import MarkdownView from '../../components/common/MarkdownView.vue'
+import StarChartCard from '../../components/chat/StarChartCard.vue'
 import { useAgentStore } from '../../stores/agent'
 import { useChatStore } from '../../stores/chat'
 import { notifyError } from '../../utils/notify'
@@ -23,6 +25,8 @@ const scrollRef = ref<HTMLElement | null>(null)
 const expandedSources = ref<Set<string>>(new Set())
 
 const sending = computed(() => chatStore.sending)
+
+const selectedAgent = computed(() => agents.value.find((a) => a.id === selectedAgentId.value))
 
 async function ensureAgents(): Promise<void> {
   if (!agents.value.length) {
@@ -125,7 +129,7 @@ onMounted(async () => {
   <AppLayout>
     <div class="chat-page">
       <div class="chat-side">
-        <h3 class="chat-side-title">选择智能体</h3>
+        <div class="eyebrow">AGENTS · {{ agents.length }}</div>
         <div v-for="agent in agents" :key="agent.id" class="agent-item">
           <button
             class="agent-btn"
@@ -135,18 +139,16 @@ onMounted(async () => {
             {{ agent.name }}
           </button>
         </div>
-        <p v-if="!agents.length" class="muted">暂无智能体，请先到「智能体」页面创建</p>
+        <p v-if="!agents.length" class="muted side-tip">
+          暂无智能体，请先到「智能体」页面创建
+        </p>
 
         <template v-if="selectedAgentId">
           <div class="session-header">
-            <h3 class="chat-side-title">会话</h3>
+            <div class="eyebrow">SESSIONS · {{ chatStore.sessions.length }}</div>
             <button class="btn btn-secondary btn-sm" @click="onCreateSession">＋新建</button>
           </div>
-          <div
-            v-for="session in chatStore.sessions"
-            :key="session.id"
-            class="agent-item"
-          >
+          <div v-for="session in chatStore.sessions" :key="session.id" class="agent-item">
             <div class="session-row">
               <button
                 class="agent-btn session-btn"
@@ -164,11 +166,22 @@ onMounted(async () => {
               </button>
             </div>
           </div>
-          <p v-if="!chatStore.sessions.length" class="muted">暂无会话，点击「新建」开始对话</p>
+          <p v-if="!chatStore.sessions.length" class="muted side-tip">
+            暂无会话，点击「新建」开始对话
+          </p>
         </template>
       </div>
 
       <div class="chat-main card">
+        <div class="chat-head">
+          <div class="chat-head-name">{{ selectedAgent?.name ?? '未选择智能体' }}</div>
+          <div v-if="selectedAgentId" class="eyebrow">
+            AGENT #{{ selectedAgentId }}<template v-if="chatStore.currentSessionId">
+              · SESSION #{{ chatStore.currentSessionId }}</template
+            >
+          </div>
+        </div>
+
         <div ref="scrollRef" class="messages">
           <div v-if="!chatStore.messages.length" class="muted empty-tip">
             {{ selectedAgentId ? '开始与智能体对话吧' : '请选择左侧的智能体开始对话' }}
@@ -179,16 +192,20 @@ onMounted(async () => {
             class="message"
             :class="msg.role"
           >
-            <div class="bubble" :class="{ 'bubble-error': msg.status === 'error' }">
+            <div
+              class="bubble"
+              :class="{ 'bubble-assistant': msg.role === 'assistant', 'bubble-streaming': msg.status === 'streaming', 'bubble-error': msg.status === 'error' }"
+            >
               <MarkdownView v-if="msg.role === 'assistant'" :content="msg.content" />
               <template v-else>{{ msg.content }}</template>
               <span v-if="msg.status === 'streaming'" class="cursor">▍</span>
               <div v-if="msg.role === 'assistant' && msg.toolCalls?.length" class="tool-calls">
-                <span class="tool-calls-label">🔧 工具：</span>
+                <span class="tool-calls-label">工具：</span>
                 <span v-for="(call, callIdx) in msg.toolCalls" :key="callIdx" class="tool-chip">
                   {{ call }}
                 </span>
               </div>
+              <StarChartCard v-if="msg.role === 'assistant' && msg.chart" :chart="msg.chart" />
               <div v-if="msg.role === 'assistant' && msg.sources?.length" class="sources">
                 <span class="sources-label">来源：</span>
                 <button
@@ -240,28 +257,34 @@ onMounted(async () => {
   padding: 0;
 }
 
+/* ---- 左侧：零件架（智能体 / 会话） ---- */
 .chat-side {
-  width: 220px;
-  padding: 16px;
-  border-right: 1px solid var(--color-border);
+  width: 228px;
+  padding: 18px 14px;
+  border-right: 1px solid var(--line);
+  background: rgba(255, 253, 247, 0.55);
   overflow-y: auto;
   flex-shrink: 0;
 }
 
-.chat-side-title {
-  margin: 0 0 12px;
-  font-size: 14px;
-  color: var(--color-text-secondary);
+.chat-side .eyebrow {
+  margin-bottom: 12px;
+}
+
+.side-tip {
+  font-size: 12px;
+  line-height: 1.7;
+  margin: 8px 0;
 }
 
 .session-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 18px;
+  margin: 20px 0 12px;
 }
 
-.session-header .chat-side-title {
+.session-header .eyebrow {
   margin: 0;
 }
 
@@ -273,21 +296,26 @@ onMounted(async () => {
   width: 100%;
   text-align: left;
   padding: 9px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  background: var(--color-surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  color: var(--ink);
   cursor: pointer;
   font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
 }
 
 .agent-btn:hover {
-  border-color: var(--color-primary);
+  border-color: var(--forge);
 }
 
+/* 激活 = 烙上锻火标记 */
 .agent-btn.active {
-  background: var(--color-primary);
-  color: #fff;
-  border-color: var(--color-primary);
+  background: var(--ink);
+  color: var(--card);
+  border-color: var(--ink);
+  font-weight: 600;
 }
 
 .session-row {
@@ -306,7 +334,7 @@ onMounted(async () => {
 .session-del {
   border: none;
   background: transparent;
-  color: var(--color-text-secondary);
+  color: var(--steel);
   font-size: 16px;
   cursor: pointer;
   padding: 4px 6px;
@@ -314,10 +342,11 @@ onMounted(async () => {
 }
 
 .session-del:hover {
-  color: var(--color-danger);
-  background: rgba(239, 68, 68, 0.08);
+  color: var(--rust);
+  background: rgba(179, 38, 30, 0.08);
 }
 
+/* ---- 对话主体：锻台 ---- */
 .chat-main {
   flex: 1;
   display: flex;
@@ -327,15 +356,28 @@ onMounted(async () => {
   overflow: hidden;
 }
 
+.chat-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 20px;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.chat-head-name {
+  font-size: 15px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .messages {
   flex: 1;
   overflow-y: auto;
   padding: 20px;
-}
-
-.empty-tip {
-  text-align: center;
-  padding: 48px 0;
 }
 
 .message {
@@ -355,31 +397,59 @@ onMounted(async () => {
   max-width: 78%;
   padding: 10px 14px;
   border-radius: 10px;
-  background: #f1f5f9;
   white-space: pre-wrap;
+  transition: border-color 0.6s ease, box-shadow 0.6s ease, background 0.6s ease;
 }
 
+/* 用户 = 墨黑的锻件 */
 .message.user .bubble {
-  background: var(--color-primary);
-  color: #fff;
+  background: var(--ink);
+  color: var(--card);
+}
+
+/* 助手 = 冷却的金属：左缘余烬，完成后冷却回发丝线 */
+.bubble-assistant {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line);
+  color: var(--ink);
+}
+
+.bubble-streaming {
+  border-left-color: var(--forge-glow);
+  box-shadow: 0 0 16px -4px rgba(232, 89, 12, 0.35);
 }
 
 .bubble-error {
-  border: 1px solid var(--color-danger);
+  border-color: var(--rust);
+  border-left-color: var(--rust);
 }
 
-/* 流式输入光标 */
+/* 用户气泡上的错误：墨黑底上红边框不可见，改为铁锈左缘 */
+.message.user .bubble.bubble-error {
+  border-left-color: var(--rust);
+  box-shadow: 0 0 16px -6px rgba(179, 38, 30, 0.5);
+}
+
+/* 余烬光标 */
 .cursor {
-  color: var(--color-primary);
-  animation: blink 1s step-start infinite;
+  color: var(--forge-glow);
+  animation: ember 1s step-start infinite;
 }
 
-@keyframes blink {
+@keyframes ember {
+  0%,
+  100% {
+    opacity: 1;
+    text-shadow: 0 0 6px rgba(232, 89, 12, 0.55);
+  }
   50% {
-    opacity: 0;
+    opacity: 0.35;
+    text-shadow: none;
   }
 }
 
+/* 工具调用 = 虚线钢印 */
 .tool-calls {
   margin-top: 8px;
   display: flex;
@@ -390,19 +460,21 @@ onMounted(async () => {
 
 .tool-calls-label {
   font-size: 12px;
-  color: var(--color-text-secondary);
+  color: var(--steel);
 }
 
 .tool-chip {
-  border: 1px dashed var(--color-primary);
-  color: var(--color-primary);
-  background: rgba(37, 99, 235, 0.04);
+  border: 1px dashed var(--forge);
+  color: var(--forge);
+  background: var(--forge-tint);
   border-radius: 6px;
   padding: 2px 8px;
-  font-size: 12px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
   word-break: break-all;
 }
 
+/* 知识库引用 */
 .sources {
   margin-top: 8px;
   display: flex;
@@ -413,32 +485,34 @@ onMounted(async () => {
 
 .sources-label {
   font-size: 12px;
-  color: var(--color-text-secondary);
+  color: var(--steel);
 }
 
 .source-chip {
-  border: 1px solid var(--color-primary);
-  color: var(--color-primary);
+  border: 1px solid var(--forge);
+  color: var(--forge);
   background: transparent;
   border-radius: 999px;
   padding: 2px 10px;
   font-size: 12px;
+  font-family: inherit;
   cursor: pointer;
+  transition: background 0.15s;
 }
 
 .source-chip:hover {
-  background: rgba(37, 99, 235, 0.08);
+  background: var(--forge-tint);
 }
 
 .source-snippet {
   width: 100%;
   margin-top: 6px;
   padding: 8px 10px;
-  border-left: 3px solid var(--color-primary);
-  background: rgba(37, 99, 235, 0.05);
+  border-left: 3px solid var(--forge);
+  background: rgba(181, 67, 0, 0.05);
   border-radius: 4px;
   font-size: 12px;
-  color: var(--color-text);
+  color: var(--ink);
   white-space: pre-wrap;
 }
 
@@ -451,18 +525,32 @@ onMounted(async () => {
 
 .error-text {
   font-size: 12px;
-  color: var(--color-danger);
+  color: var(--rust);
 }
 
+/* 输入台 */
 .composer {
   display: flex;
   gap: 10px;
   padding: 12px 16px;
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--line);
   align-items: flex-end;
+  background: rgba(255, 253, 247, 0.55);
 }
 
 .input-box {
   flex: 1;
+  max-height: 160px;
+}
+
+@media (max-width: 860px) {
+  .chat-side {
+    width: 168px;
+    padding: 14px 10px;
+  }
+
+  .chat-main {
+    margin: 10px;
+  }
 }
 </style>

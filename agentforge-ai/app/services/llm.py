@@ -331,7 +331,10 @@ class LLMClient:
         payload["tools"] = tools
         payload["stream"] = True
         full = ""
-        tool_calls: list[dict] = []
+        # OpenAI 流式协议的 tool_calls 为增量：首个 chunk 带 id+name+空 arguments，
+        # 后续 chunk 仅携带 arguments 片段（无 id/name）。须按 index 累积拼接，
+        # 否则碎片会被当成完整调用（name 为空 → 工具未注册、参数残缺 → 执行报错）。
+        pending: dict[int, dict] = {}
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 async with client.stream(
@@ -355,10 +358,22 @@ class LLMClient:
                             full += content
                             yield {"type": "delta", "content": content}
                         for tc in delta.get("tool_calls", []) or []:
+                            idx = tc.get("index", 0)
+                            slot = pending.setdefault(idx, {"id": "", "name": "", "arguments": ""})
+                            if tc.get("id"):
+                                slot["id"] = tc["id"]
                             fn = tc.get("function", {})
-                            tool_calls.append(self._normalize_tool_call(
-                                fn, has_tool_call_id=True,
-                                tool_call_id=tc.get("id")))
+                            if fn.get("name"):
+                                slot["name"] = fn["name"]
+                            if fn.get("arguments"):
+                                slot["arguments"] += fn["arguments"]
+            tool_calls = [
+                LLMClient._normalize_tool_call(
+                    {"name": slot["name"], "arguments": slot["arguments"]},
+                    has_tool_call_id=True, tool_call_id=slot["id"] or None,
+                )
+                for slot in (pending[i] for i in sorted(pending))
+            ]
             yield {"type": "done", "content": full, "tool_calls": tool_calls}
         except AiServiceError:
             raise

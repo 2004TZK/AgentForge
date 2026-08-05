@@ -11,6 +11,6 @@ USE `agentforge`;
 SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS
   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'agent' AND COLUMN_NAME = 'visibility');
 SET @ddl = IF(@col_exists = 0,
-  'ALTER TABLE `agent` ADD COLUMN `visibility` VARCHAR(20) NOT NULL DEFAULT ''PRIVATE'' COMMENT ''可见性 PUBLIC/PRIVATE（私有仅创建者可见）'' AFTER `workflow_id`',
+  'ALTER TABLE `agent` ADD COLUMN `visibility` VARCHAR(20) NOT NULL DEFAULT ''PRIVATE'' COMMENT ''可见性 PUBLIC/PRIVATE（私有仅创建者可见）'' AFTER `mode`',
   'SELECT 1');
 PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;

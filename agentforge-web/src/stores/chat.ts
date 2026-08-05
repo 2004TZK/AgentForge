@@ -9,7 +9,7 @@ import {
   apiSessionList,
   isAbort,
 } from '../api/chat'
-import type { ChatMessage, SessionItem } from '../types/chat'
+import type { ChatMessage, SessionItem, StarChartData } from '../types/chat'
 
 export const useChatStore = defineStore('chat', () => {
   const messages = ref<ChatMessage[]>([])
@@ -105,6 +105,14 @@ export const useChatStore = defineStore('chat', () => {
             assistantMessage.toolCalls.push(
               `${event.name}(${JSON.stringify(event.arguments)}) → ${event.result.slice(0, 120)}`,
             )
+            // M2.5：star_chart 成功返回 JSON 时解析为结构化数据，渲染排盘卡片
+            if (event.name === 'star_chart' && event.result.startsWith('{')) {
+              try {
+                assistantMessage.chart = JSON.parse(event.result) as StarChartData
+              } catch {
+                // 解析失败仅保留文本工具记录，不阻塞对话
+              }
+            }
           },
           onDone: (result) => {
             assistantMessage.content = result.answer

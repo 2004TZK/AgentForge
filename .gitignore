@@ -47,6 +47,8 @@ data/
 !agentforge-ai/app/tools/data/ephe/COPYRIGHT.txt
 logs/
 *.log
+# 星盘 E2E 运行产物（真实 LLM 输出，按需复现）
+agentforge-ai/tests/out/
 
 # ===== 操作系统 =====
 .DS_Store
