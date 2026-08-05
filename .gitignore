@@ -39,6 +39,12 @@ docker/nginx/certs/
 
 # ===== 数据与日志 =====
 data/
+# 豁免：星盘分析工具的内置数据（城市库 + 瑞士历书），必须随仓库提交
+!agentforge-ai/app/tools/data/
+!agentforge-ai/app/tools/data/cities.json
+!agentforge-ai/app/tools/data/ephe/
+!agentforge-ai/app/tools/data/ephe/*.se1
+!agentforge-ai/app/tools/data/ephe/COPYRIGHT.txt
 logs/
 *.log
 

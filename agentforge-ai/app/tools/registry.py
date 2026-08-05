@@ -6,7 +6,7 @@
 - call(payload, config)：payload 为 LLM 工具调用参数；config 为智能体工具配置
 - M3 起支持 OpenAI 兼容 tools 参数格式（type=function），供 Ollama 原生 API / OpenAI 兼容接口使用
 """
-from app.tools import calculator, current_time, github, web_search
+from app.tools import calculator, current_time, github, star_chart, web_search
 
 
 def _calc(payload: dict, config: dict | None = None) -> str:
@@ -27,11 +27,17 @@ def _web_search(payload: dict, config: dict | None = None) -> str:
     return json.dumps(web_search.web_search(payload.get("query", ""), config), ensure_ascii=False)
 
 
+def _star_chart(payload: dict, config: dict | None = None) -> str:
+    return star_chart.run(payload, config)
+
+
 TOOL_REGISTRY = {
     "calculator": {"call": _calc, "schema": calculator.SCHEMA},
     "github": {"call": _github, "schema": github.SCHEMA},
     "current_time": {"call": _current_time, "schema": current_time.SCHEMA},
     "web_search": {"call": _web_search, "schema": web_search.SCHEMA},
+    # star_chart 出参为完整排盘 JSON（数 KB），禁用结果截断，保证 LLM 拿到全量数据
+    "star_chart": {"call": _star_chart, "schema": star_chart.SCHEMA, "result_max": None},
 }
 
 # 工具执行结果的展示截断长度（防超长结果污染对话/日志）
@@ -99,7 +105,8 @@ def call_tool(tool_name: str, payload: dict, config: dict | None = None) -> str:
     except Exception as exc:  # noqa: BLE001 - 工具执行异常兜底为失败文本
         return f"[工具 {tool_name} 调用失败: {exc}]"
     text = str(result)
-    return text if len(text) <= RESULT_MAX else text[:RESULT_MAX] + "…[截断]"
+    limit = TOOL_REGISTRY[tool_name].get("result_max", RESULT_MAX)
+    return text if limit is None or len(text) <= limit else text[:limit] + "…[截断]"
 
 
 def get_config(tool_name: str) -> dict:

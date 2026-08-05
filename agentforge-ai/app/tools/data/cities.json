@@ -1,0 +1,1786 @@
+[
+  {
+    "zh": "上海",
+    "en": "Shanghai",
+    "country": "中国",
+    "lat": 31.2222,
+    "lng": 121.4581,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "北京",
+    "en": "Beijing",
+    "country": "中国",
+    "lat": 39.9075,
+    "lng": 116.3972,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "深圳",
+    "en": "Shenzhen",
+    "country": "中国",
+    "lat": 22.5455,
+    "lng": 114.0683,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "广州",
+    "en": "Guangzhou",
+    "country": "中国",
+    "lat": 23.1167,
+    "lng": 113.25,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "成都",
+    "en": "Chengdu",
+    "country": "中国",
+    "lat": 30.6667,
+    "lng": 104.0667,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "天津",
+    "en": "Tianjin",
+    "country": "中国",
+    "lat": 39.1422,
+    "lng": 117.1767,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "武汉",
+    "en": "Wuhan",
+    "country": "中国",
+    "lat": 30.5833,
+    "lng": 114.2667,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "东莞",
+    "en": "Dongguan",
+    "country": "中国",
+    "lat": 23.018,
+    "lng": 113.7487,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "西安",
+    "en": "Xi’an",
+    "country": "中国",
+    "lat": 34.2583,
+    "lng": 108.9286,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "南京",
+    "en": "Nanjing",
+    "country": "中国",
+    "lat": 32.0617,
+    "lng": 118.7778,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "杭州",
+    "en": "Hangzhou",
+    "country": "中国",
+    "lat": 30.2936,
+    "lng": 120.1614,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "佛山",
+    "en": "Foshan",
+    "country": "中国",
+    "lat": 23.0268,
+    "lng": 113.1315,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "重庆",
+    "en": "Chongqing",
+    "country": "中国",
+    "lat": 29.5603,
+    "lng": 106.5577,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "吴忠",
+    "en": "Wuzhong",
+    "country": "中国",
+    "lat": 37.9867,
+    "lng": 106.201,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "青岛",
+    "en": "Qingdao",
+    "country": "中国",
+    "lat": 36.0649,
+    "lng": 120.3804,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "沈阳",
+    "en": "Shenyang",
+    "country": "中国",
+    "lat": 41.7922,
+    "lng": 123.4328,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "苏州",
+    "en": "Suzhou",
+    "country": "中国",
+    "lat": 31.3041,
+    "lng": 120.5954,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "浦西",
+    "en": "Puxi",
+    "country": "中国",
+    "lat": 31.2441,
+    "lng": 121.4659,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "上海浦东",
+    "en": "Pudong",
+    "country": "中国",
+    "lat": 31.24,
+    "lng": 121.5009,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "哈尔滨",
+    "en": "Harbin",
+    "country": "中国",
+    "lat": 45.75,
+    "lng": 126.65,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "合肥",
+    "en": "Hefei",
+    "country": "中国",
+    "lat": 31.8639,
+    "lng": 117.2808,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "大连",
+    "en": "Dalian",
+    "country": "中国",
+    "lat": 38.9122,
+    "lng": 121.6022,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "长春",
+    "en": "Changchun",
+    "country": "中国",
+    "lat": 43.88,
+    "lng": 125.3228,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "厦门",
+    "en": "Xiamen",
+    "country": "中国",
+    "lat": 24.4798,
+    "lng": 118.0819,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "宝安",
+    "en": "Bao'an",
+    "country": "中国",
+    "lat": 22.5521,
+    "lng": 113.8829,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "无锡",
+    "en": "Wuxi",
+    "country": "中国",
+    "lat": 31.5689,
+    "lng": 120.2886,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "济南",
+    "en": "Jinan",
+    "country": "中国",
+    "lat": 36.6683,
+    "lng": 116.9972,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "太原",
+    "en": "Taiyuan",
+    "country": "中国",
+    "lat": 37.8694,
+    "lng": 112.5603,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "郑州",
+    "en": "Zhengzhou",
+    "country": "中国",
+    "lat": 34.7578,
+    "lng": 113.6486,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "石家庄",
+    "en": "Shijiazhuang",
+    "country": "中国",
+    "lat": 38.0414,
+    "lng": 114.4786,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "昆明",
+    "en": "Kunming",
+    "country": "中国",
+    "lat": 25.0389,
+    "lng": 102.7183,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "中山",
+    "en": "Zhongshan",
+    "country": "中国",
+    "lat": 22.5231,
+    "lng": 113.3791,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "南宁",
+    "en": "Nanning",
+    "country": "中国",
+    "lat": 22.8167,
+    "lng": 108.3167,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "汕头",
+    "en": "Shantou",
+    "country": "中国",
+    "lat": 23.3549,
+    "lng": 116.6788,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "福州",
+    "en": "Fuzhou",
+    "country": "中国",
+    "lat": 26.0614,
+    "lng": 119.3061,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "宁波",
+    "en": "Ningbo",
+    "country": "中国",
+    "lat": 29.8782,
+    "lng": 121.5494,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "濮阳",
+    "en": "Puyang",
+    "country": "中国",
+    "lat": 29.4568,
+    "lng": 119.8887,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "十堰",
+    "en": "Shiyan",
+    "country": "中国",
+    "lat": 32.6475,
+    "lng": 110.7781,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "唐山",
+    "en": "Tangshan",
+    "country": "中国",
+    "lat": 39.6438,
+    "lng": 118.1832,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "吕梁市",
+    "en": "Lüliang",
+    "country": "中国",
+    "lat": 37.5192,
+    "lng": 111.1444,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "常州",
+    "en": "Changzhou",
+    "country": "中国",
+    "lat": 31.7736,
+    "lng": 119.954,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "淄博",
+    "en": "Zibo",
+    "country": "中国",
+    "lat": 36.7906,
+    "lng": 118.0633,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "长沙",
+    "en": "Changsha",
+    "country": "中国",
+    "lat": 28.1987,
+    "lng": 112.9709,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "贵阳",
+    "en": "Guiyang",
+    "country": "中国",
+    "lat": 26.5833,
+    "lng": 106.7167,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "乌鲁木齐",
+    "en": "Ürümqi",
+    "country": "中国",
+    "lat": 43.801,
+    "lng": 87.6005,
+    "tz": "Asia/Urumqi"
+  },
+  {
+    "zh": "兰州",
+    "en": "Lanzhou",
+    "country": "中国",
+    "lat": 36.057,
+    "lng": 103.8399,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "惠州",
+    "en": "Huizhou",
+    "country": "中国",
+    "lat": 23.1115,
+    "lng": 114.4152,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "海口",
+    "en": "Haikou",
+    "country": "中国",
+    "lat": 20.0342,
+    "lng": 110.3465,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "临沂",
+    "en": "Linyi",
+    "country": "中国",
+    "lat": 35.0631,
+    "lng": 118.3428,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "保定",
+    "en": "Baoding",
+    "country": "中国",
+    "lat": 38.8729,
+    "lng": 115.4625,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "闵行",
+    "en": "Minhang",
+    "country": "中国",
+    "lat": 31.1088,
+    "lng": 121.3747,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "巴中",
+    "en": "Bazhong",
+    "country": "中国",
+    "lat": 31.8694,
+    "lng": 106.7443,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "温州",
+    "en": "Wenzhou",
+    "country": "中国",
+    "lat": 27.9994,
+    "lng": 120.6668,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "云浮",
+    "en": "Yunfu",
+    "country": "中国",
+    "lat": 22.9279,
+    "lng": 112.0381,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "淮安",
+    "en": "Huai'an",
+    "country": "中国",
+    "lat": 33.5886,
+    "lng": 119.0192,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "南昌",
+    "en": "Nanchang",
+    "country": "中国",
+    "lat": 28.684,
+    "lng": 115.8531,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "呼和浩特",
+    "en": "Hohhot",
+    "country": "中国",
+    "lat": 40.8106,
+    "lng": 111.6522,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "紹興",
+    "en": "Shaoxing",
+    "country": "中国",
+    "lat": 30.0024,
+    "lng": 120.5786,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "南通",
+    "en": "Nantong",
+    "country": "中国",
+    "lat": 32.0303,
+    "lng": 120.8747,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "保山",
+    "en": "Baoshan",
+    "country": "中国",
+    "lat": 31.4084,
+    "lng": 121.4896,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "烟台",
+    "en": "Yantai",
+    "country": "中国",
+    "lat": 37.4765,
+    "lng": 121.4408,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "珠海",
+    "en": "Zhuhai",
+    "country": "中国",
+    "lat": 22.2769,
+    "lng": 113.5678,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "包头",
+    "en": "Baotou",
+    "country": "中国",
+    "lat": 40.6516,
+    "lng": 109.8439,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "庆阳",
+    "en": "Qingyang",
+    "country": "中国",
+    "lat": 35.7098,
+    "lng": 107.6445,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "崑山",
+    "en": "Kunshan",
+    "country": "中国",
+    "lat": 31.3776,
+    "lng": 120.9543,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "潍坊",
+    "en": "Weifang",
+    "country": "中国",
+    "lat": 36.71,
+    "lng": 119.1019,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "遵义",
+    "en": "Zunyi",
+    "country": "中国",
+    "lat": 27.6867,
+    "lng": 106.9072,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "连云港",
+    "en": "Lianyungang",
+    "country": "中国",
+    "lat": 34.5984,
+    "lng": 119.2156,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "赣州",
+    "en": "Ganzhou",
+    "country": "中国",
+    "lat": 25.8466,
+    "lng": 114.9326,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "松江",
+    "en": "Songjiang",
+    "country": "中国",
+    "lat": 31.0344,
+    "lng": 121.2233,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "鄂尔多斯",
+    "en": "Ordos",
+    "country": "中国",
+    "lat": 39.6086,
+    "lng": 109.7816,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "掲陽市",
+    "en": "Jieyang",
+    "country": "中国",
+    "lat": 23.5418,
+    "lng": 116.3658,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "吉林",
+    "en": "Jilin",
+    "country": "中国",
+    "lat": 43.8465,
+    "lng": 126.5608,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "嘉定",
+    "en": "Jiading",
+    "country": "中国",
+    "lat": 31.3858,
+    "lng": 121.2446,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "商丘",
+    "en": "Shangqiu",
+    "country": "中国",
+    "lat": 34.4143,
+    "lng": 115.6561,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "南充",
+    "en": "Nanchong",
+    "country": "中国",
+    "lat": 30.7951,
+    "lng": 106.0847,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "大同市",
+    "en": "Datong",
+    "country": "中国",
+    "lat": 40.0936,
+    "lng": 113.2914,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "南阳",
+    "en": "Nanyang",
+    "country": "中国",
+    "lat": 33.0052,
+    "lng": 112.5466,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "江门",
+    "en": "Jiangmen",
+    "country": "中国",
+    "lat": 22.5833,
+    "lng": 113.0833,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "江阴市",
+    "en": "Jiangyin",
+    "country": "中国",
+    "lat": 31.911,
+    "lng": 120.263,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "阜阳",
+    "en": "Fuyang",
+    "country": "中国",
+    "lat": 32.9,
+    "lng": 115.8167,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "巴彦淖尔市",
+    "en": "Bayan Nur",
+    "country": "中国",
+    "lat": 40.7414,
+    "lng": 107.386,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "潮州",
+    "en": "Chaozhou",
+    "country": "中国",
+    "lat": 23.654,
+    "lng": 116.6226,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "清远",
+    "en": "Qingyuan",
+    "country": "中国",
+    "lat": 23.7,
+    "lng": 113.0333,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "泰安",
+    "en": "Tai’an",
+    "country": "中国",
+    "lat": 36.1853,
+    "lng": 117.12,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "西宁",
+    "en": "Xining",
+    "country": "中国",
+    "lat": 36.6255,
+    "lng": 101.7574,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "常熟",
+    "en": "Changshu",
+    "country": "中国",
+    "lat": 31.6461,
+    "lng": 120.7422,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "淮南市",
+    "en": "Huainan",
+    "country": "中国",
+    "lat": 32.6264,
+    "lng": 116.9969,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "六安",
+    "en": "Lu’an",
+    "country": "中国",
+    "lat": 31.7356,
+    "lng": 116.5169,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "盐城",
+    "en": "Yancheng",
+    "country": "中国",
+    "lat": 33.3575,
+    "lng": 120.1573,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "泰州",
+    "en": "Taizhou",
+    "country": "中国",
+    "lat": 32.4907,
+    "lng": 119.9081,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "大庆",
+    "en": "Daqing",
+    "country": "中国",
+    "lat": 46.5833,
+    "lng": 125.0,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "芜湖",
+    "en": "Wuhu",
+    "country": "中国",
+    "lat": 31.3526,
+    "lng": 118.4295,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "达州",
+    "en": "Dazhou",
+    "country": "中国",
+    "lat": 31.2106,
+    "lng": 107.4631,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "扬州",
+    "en": "Yangzhou",
+    "country": "中国",
+    "lat": 32.3972,
+    "lng": 119.4358,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "桂林",
+    "en": "Guilin",
+    "country": "中国",
+    "lat": 25.2802,
+    "lng": 110.2964,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "肇庆",
+    "en": "Zhaoqing",
+    "country": "中国",
+    "lat": 23.0489,
+    "lng": 112.4609,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "绵阳",
+    "en": "Mianyang",
+    "country": "中国",
+    "lat": 31.4678,
+    "lng": 104.6817,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "万州区",
+    "en": "Wanzhou",
+    "country": "中国",
+    "lat": 30.7645,
+    "lng": 108.3959,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "莆田",
+    "en": "Putian",
+    "country": "中国",
+    "lat": 25.4394,
+    "lng": 119.0103,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "银川",
+    "en": "Yinchuan",
+    "country": "中国",
+    "lat": 38.4681,
+    "lng": 106.2731,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "义乌",
+    "en": "Yiwu",
+    "country": "中国",
+    "lat": 29.3151,
+    "lng": 120.0768,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "泉州",
+    "en": "Quanzhou",
+    "country": "中国",
+    "lat": 24.9139,
+    "lng": 118.5858,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "金华",
+    "en": "Jinhua",
+    "country": "中国",
+    "lat": 29.1068,
+    "lng": 119.6442,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "慈溪",
+    "en": "Cixi",
+    "country": "中国",
+    "lat": 30.1764,
+    "lng": 121.2457,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "常德",
+    "en": "Changde",
+    "country": "中国",
+    "lat": 29.0321,
+    "lng": 111.6984,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "开封",
+    "en": "Kaifeng",
+    "country": "中国",
+    "lat": 34.7986,
+    "lng": 114.3074,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "鞍山",
+    "en": "Anshan",
+    "country": "中国",
+    "lat": 41.1236,
+    "lng": 122.99,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "宝鶏市",
+    "en": "Baoji",
+    "country": "中国",
+    "lat": 34.3678,
+    "lng": 107.237,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "宿迁市",
+    "en": "Suqian",
+    "country": "中国",
+    "lat": 33.9492,
+    "lng": 118.2958,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "柳州",
+    "en": "Liuzhou",
+    "country": "中国",
+    "lat": 24.324,
+    "lng": 109.407,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "张家港",
+    "en": "Zhangjiagang",
+    "country": "中国",
+    "lat": 31.865,
+    "lng": 120.5389,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "晉江",
+    "en": "Jinjiang",
+    "country": "中国",
+    "lat": 24.8198,
+    "lng": 118.5742,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "亳州",
+    "en": "Bozhou",
+    "country": "中国",
+    "lat": 33.8772,
+    "lng": 115.7703,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "曲靖",
+    "en": "Qujing",
+    "country": "中国",
+    "lat": 25.4833,
+    "lng": 103.7833,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "湛江",
+    "en": "Zhanjiang",
+    "country": "中国",
+    "lat": 21.2339,
+    "lng": 110.3875,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "抚顺",
+    "en": "Fushun",
+    "country": "中国",
+    "lat": 41.8867,
+    "lng": 123.9436,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "洛阳",
+    "en": "Luoyang",
+    "country": "中国",
+    "lat": 34.6735,
+    "lng": 112.4368,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "关口",
+    "en": "Guankou",
+    "country": "中国",
+    "lat": 28.1586,
+    "lng": 113.6271,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "邯郸",
+    "en": "Handan",
+    "country": "中国",
+    "lat": 36.61,
+    "lng": 114.4876,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "宜昌",
+    "en": "Yichang",
+    "country": "中国",
+    "lat": 30.7144,
+    "lng": 111.2847,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "菏泽",
+    "en": "Heze",
+    "country": "中国",
+    "lat": 35.2393,
+    "lng": 115.4736,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "六盘水市",
+    "en": "Liupanshui",
+    "country": "中国",
+    "lat": 26.5944,
+    "lng": 104.8333,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "茂名",
+    "en": "Maoming",
+    "country": "中国",
+    "lat": 21.6663,
+    "lng": 110.9136,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "欽州",
+    "en": "Qinzhou",
+    "country": "中国",
+    "lat": 21.9825,
+    "lng": 108.6506,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "漯河",
+    "en": "Luohe",
+    "country": "中国",
+    "lat": 33.5742,
+    "lng": 114.0326,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "襄阳",
+    "en": "Xiangyang",
+    "country": "中国",
+    "lat": 32.0422,
+    "lng": 112.1448,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "阳江",
+    "en": "Yangjiang",
+    "country": "中国",
+    "lat": 21.8556,
+    "lng": 111.9627,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "宜兴市",
+    "en": "Yixing",
+    "country": "中国",
+    "lat": 31.3606,
+    "lng": 119.8202,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "青浦",
+    "en": "Qingpu",
+    "country": "中国",
+    "lat": 31.1539,
+    "lng": 121.1141,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "许昌",
+    "en": "Xuchang",
+    "country": "中国",
+    "lat": 34.0319,
+    "lng": 113.863,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "自贡",
+    "en": "Zigong",
+    "country": "中国",
+    "lat": 29.3416,
+    "lng": 104.7769,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "徐州",
+    "en": "Xuzhou",
+    "country": "中国",
+    "lat": 34.2044,
+    "lng": 117.2839,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "内江",
+    "en": "Neijiang",
+    "country": "中国",
+    "lat": 29.5835,
+    "lng": 105.0622,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "益阳",
+    "en": "Heshan",
+    "country": "中国",
+    "lat": 28.5694,
+    "lng": 112.3473,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "济宁",
+    "en": "Jining",
+    "country": "中国",
+    "lat": 35.405,
+    "lng": 116.5814,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "普陀",
+    "en": "Putuo",
+    "country": "中国",
+    "lat": 31.251,
+    "lng": 121.3897,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "信阳",
+    "en": "Xinyang",
+    "country": "中国",
+    "lat": 32.1228,
+    "lng": 114.0656,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "聊城",
+    "en": "Liaocheng",
+    "country": "中国",
+    "lat": 36.4506,
+    "lng": 116.0025,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "晋中市",
+    "en": "Jinzhong",
+    "country": "中国",
+    "lat": 37.684,
+    "lng": 112.7547,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "潞安",
+    "en": "Changzhi",
+    "country": "中国",
+    "lat": 36.1839,
+    "lng": 113.1053,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "天水",
+    "en": "Tianshui",
+    "country": "中国",
+    "lat": 34.5795,
+    "lng": 105.7424,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "杨浦",
+    "en": "Yangpu",
+    "country": "中国",
+    "lat": 31.2619,
+    "lng": 121.519,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "渭南",
+    "en": "Weinan",
+    "country": "中国",
+    "lat": 34.5035,
+    "lng": 109.5089,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "嘉兴",
+    "en": "Jiaxing",
+    "country": "中国",
+    "lat": 30.7522,
+    "lng": 120.75,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "中卫",
+    "en": "Zhongwei",
+    "country": "中国",
+    "lat": 37.5113,
+    "lng": 105.1907,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "盘锦",
+    "en": "Panjin",
+    "country": "中国",
+    "lat": 41.121,
+    "lng": 122.0739,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "九江",
+    "en": "Jiujiang",
+    "country": "中国",
+    "lat": 29.7048,
+    "lng": 116.0021,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "安阳",
+    "en": "Anyang",
+    "country": "中国",
+    "lat": 36.096,
+    "lng": 114.3828,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "罗湖",
+    "en": "Luohu District",
+    "country": "中国",
+    "lat": 22.5472,
+    "lng": 114.1315,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "奉贤",
+    "en": "Fengxiang",
+    "country": "中国",
+    "lat": 30.8584,
+    "lng": 121.4678,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "毕节",
+    "en": "Bijie",
+    "country": "中国",
+    "lat": 27.3019,
+    "lng": 105.2863,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "株洲",
+    "en": "Zhuzhou",
+    "country": "中国",
+    "lat": 27.8333,
+    "lng": 113.15,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "上饶",
+    "en": "Shangrao",
+    "country": "中国",
+    "lat": 28.4518,
+    "lng": 117.9429,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "淮北",
+    "en": "Huaibei",
+    "country": "中国",
+    "lat": 33.9744,
+    "lng": 116.7917,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "徐汇",
+    "en": "Xuhui",
+    "country": "中国",
+    "lat": 31.1959,
+    "lng": 121.4471,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "眉山",
+    "en": "Meishan",
+    "country": "中国",
+    "lat": 30.0439,
+    "lng": 103.837,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "貴港",
+    "en": "Guigang",
+    "country": "中国",
+    "lat": 23.116,
+    "lng": 109.5947,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "衡阳",
+    "en": "Hengyang",
+    "country": "中国",
+    "lat": 26.8895,
+    "lng": 112.6189,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "玉林",
+    "en": "Yulin",
+    "country": "中国",
+    "lat": 22.6305,
+    "lng": 110.1469,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "荆州",
+    "en": "Jingzhou",
+    "country": "中国",
+    "lat": 30.3503,
+    "lng": 112.1903,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "新乡",
+    "en": "Xinxiang",
+    "country": "中国",
+    "lat": 35.1903,
+    "lng": 113.8015,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "宜春",
+    "en": "Yichun",
+    "country": "中国",
+    "lat": 27.8333,
+    "lng": 114.4,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "咸阳",
+    "en": "Xianyang",
+    "country": "中国",
+    "lat": 34.3378,
+    "lng": 108.7026,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "三亚",
+    "en": "Sanya",
+    "country": "中国",
+    "lat": 18.2543,
+    "lng": 109.5095,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "韶关",
+    "en": "Shaoguan",
+    "country": "中国",
+    "lat": 24.8,
+    "lng": 113.5833,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "竜岩",
+    "en": "Longyan",
+    "country": "中国",
+    "lat": 25.0749,
+    "lng": 117.0178,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "永州",
+    "en": "Yongzhou",
+    "country": "中国",
+    "lat": 26.4239,
+    "lng": 111.6131,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "吴兴",
+    "en": "Huzhou",
+    "country": "中国",
+    "lat": 30.8703,
+    "lng": 120.0933,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "武威",
+    "en": "Wuwei",
+    "country": "中国",
+    "lat": 37.9267,
+    "lng": 102.632,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "汉中",
+    "en": "Hanzhong",
+    "country": "中国",
+    "lat": 33.0751,
+    "lng": 107.0221,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "賀州",
+    "en": "Hezhou",
+    "country": "中国",
+    "lat": 24.4036,
+    "lng": 111.5667,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "诸城",
+    "en": "Zhu Cheng City",
+    "country": "中国",
+    "lat": 35.995,
+    "lng": 119.4026,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "东营市",
+    "en": "Dongying",
+    "country": "中国",
+    "lat": 37.4627,
+    "lng": 118.4917,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "泸州",
+    "en": "Luzhou",
+    "country": "中国",
+    "lat": 28.8903,
+    "lng": 105.4257,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "梅州",
+    "en": "Meizhou",
+    "country": "中国",
+    "lat": 24.2886,
+    "lng": 116.1177,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "岳阳",
+    "en": "Yueyang",
+    "country": "中国",
+    "lat": 29.3745,
+    "lng": 113.0948,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "莱芜市",
+    "en": "Laiwu",
+    "country": "中国",
+    "lat": 36.1928,
+    "lng": 117.6569,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "本溪",
+    "en": "Benxi",
+    "country": "中国",
+    "lat": 41.2886,
+    "lng": 123.765,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "平頂山",
+    "en": "Pingdingshan",
+    "country": "中国",
+    "lat": 33.7309,
+    "lng": 113.3155,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "蚌埠",
+    "en": "Bengbu",
+    "country": "中国",
+    "lat": 32.9408,
+    "lng": 117.3608,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "三河",
+    "en": "Sanhe",
+    "country": "中国",
+    "lat": 39.9805,
+    "lng": 117.0689,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "湘潭",
+    "en": "Xiangtan",
+    "country": "中国",
+    "lat": 27.85,
+    "lng": 112.9,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "临汾",
+    "en": "Linfen",
+    "country": "中国",
+    "lat": 36.0889,
+    "lng": 111.5189,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "鎮江",
+    "en": "Zhenjiang",
+    "country": "中国",
+    "lat": 32.2109,
+    "lng": 119.4551,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "葫芦岛",
+    "en": "Huludao",
+    "country": "中国",
+    "lat": 40.7524,
+    "lng": 120.8355,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "静安",
+    "en": "Jing’an",
+    "country": "中国",
+    "lat": 31.22,
+    "lng": 121.4158,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "瑞安",
+    "en": "Rui’an",
+    "country": "中国",
+    "lat": 27.7761,
+    "lng": 120.6586,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "來賓",
+    "en": "Laibin",
+    "country": "中国",
+    "lat": 23.7474,
+    "lng": 109.2222,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "孝感",
+    "en": "Xiaogan",
+    "country": "中国",
+    "lat": 30.9269,
+    "lng": 113.9222,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "资阳市",
+    "en": "Ziyang",
+    "country": "中国",
+    "lat": 30.1211,
+    "lng": 104.6481,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "衢州",
+    "en": "Quzhou",
+    "country": "中国",
+    "lat": 28.9594,
+    "lng": 118.8686,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "枣庄市",
+    "en": "Zaozhuang",
+    "country": "中国",
+    "lat": 34.8647,
+    "lng": 117.5542,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "萍乡",
+    "en": "Pingxiang",
+    "country": "中国",
+    "lat": 27.6167,
+    "lng": 113.8535,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "定海",
+    "en": "Zhoushan",
+    "country": "中国",
+    "lat": 29.9887,
+    "lng": 122.2049,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "齐齐哈尔",
+    "en": "Qiqihar",
+    "country": "中国",
+    "lat": 47.3392,
+    "lng": 123.9615,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "普宁",
+    "en": "Puning",
+    "country": "中国",
+    "lat": 23.3107,
+    "lng": 116.1687,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "安康",
+    "en": "Ankang",
+    "country": "中国",
+    "lat": 32.68,
+    "lng": 109.0172,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "廊坊",
+    "en": "Langfang",
+    "country": "中国",
+    "lat": 39.5208,
+    "lng": 116.7147,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "焦作",
+    "en": "Jiaozuo",
+    "country": "中国",
+    "lat": 35.2392,
+    "lng": 113.2391,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "万州",
+    "en": "Wanxian",
+    "country": "中国",
+    "lat": 30.816,
+    "lng": 108.3741,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "广安",
+    "en": "Guang’an",
+    "country": "中国",
+    "lat": 30.4741,
+    "lng": 106.637,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "威海",
+    "en": "Weihai",
+    "country": "中国",
+    "lat": 37.5091,
+    "lng": 122.1136,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "闸北",
+    "en": "Zhabei",
+    "country": "中国",
+    "lat": 31.2586,
+    "lng": 121.4597,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "新余",
+    "en": "Xinyu",
+    "country": "中国",
+    "lat": 27.8043,
+    "lng": 114.9334,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "宜宾",
+    "en": "Yibin",
+    "country": "中国",
+    "lat": 28.7593,
+    "lng": 104.6399,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "城厢",
+    "en": "Taicang",
+    "country": "中国",
+    "lat": 31.4478,
+    "lng": 121.0939,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "金山",
+    "en": "Jinshan",
+    "country": "中国",
+    "lat": 30.8356,
+    "lng": 121.2937,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "郴州",
+    "en": "Chenzhou",
+    "country": "中国",
+    "lat": 25.8,
+    "lng": 113.0333,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "安庆",
+    "en": "Anqing",
+    "country": "中国",
+    "lat": 30.5136,
+    "lng": 117.0472,
+    "tz": "Asia/Shanghai"
+  },
+  {
+    "zh": "香港",
+    "en": "Hong Kong",
+    "country": "中国香港",
+    "lat": 22.2783,
+    "lng": 114.1747,
+    "tz": "Asia/Hong_Kong"
+  },
+  {
+    "zh": "新界",
+    "en": "New Territories",
+    "country": "中国香港",
+    "lat": 22.4244,
+    "lng": 114.111,
+    "tz": "Asia/Hong_Kong"
+  },
+  {
+    "zh": "九龙",
+    "en": "Kowloon",
+    "country": "中国香港",
+    "lat": 22.3167,
+    "lng": 114.1833,
+    "tz": "Asia/Hong_Kong"
+  },
+  {
+    "zh": "澳门",
+    "en": "Macau",
+    "country": "中国澳门",
+    "lat": 22.2006,
+    "lng": 113.5461,
+    "tz": "Asia/Macau"
+  },
+  {
+    "zh": "氹仔",
+    "en": "Taipa",
+    "country": "中国澳门",
+    "lat": 22.1558,
+    "lng": 113.5569,
+    "tz": "Asia/Macau"
+  },
+  {
+    "zh": "台北",
+    "en": "Taipei",
+    "country": "中国台湾",
+    "lat": 25.0531,
+    "lng": 121.5264,
+    "tz": "Asia/Taipei"
+  },
+  {
+    "zh": "新北",
+    "en": "New Taipei City",
+    "country": "中国台湾",
+    "lat": 25.062,
+    "lng": 121.457,
+    "tz": "Asia/Taipei"
+  },
+  {
+    "zh": "台中",
+    "en": "Taichung",
+    "country": "中国台湾",
+    "lat": 24.1469,
+    "lng": 120.6839,
+    "tz": "Asia/Taipei"
+  },
+  {
+    "zh": "高雄",
+    "en": "Kaohsiung",
+    "country": "中国台湾",
+    "lat": 22.6163,
+    "lng": 120.3133,
+    "tz": "Asia/Taipei"
+  },
+  {
+    "zh": "台南",
+    "en": "Tainan",
+    "country": "中国台湾",
+    "lat": 22.9908,
+    "lng": 120.2133,
+    "tz": "Asia/Taipei"
+  },
+  {
+    "zh": "板橋",
+    "en": "Banqiao",
+    "country": "中国台湾",
+    "lat": 25.0143,
+    "lng": 121.4672,
+    "tz": "Asia/Taipei"
+  },
+  {
+    "zh": "桃园",
+    "en": "Taoyuan",
+    "country": "中国台湾",
+    "lat": 24.9937,
+    "lng": 121.297,
+    "tz": "Asia/Taipei"
+  },
+  {
+    "zh": "新竹",
+    "en": "Hsinchu",
+    "country": "中国台湾",
+    "lat": 24.8036,
+    "lng": 120.9686,
+    "tz": "Asia/Taipei"
+  }
+]

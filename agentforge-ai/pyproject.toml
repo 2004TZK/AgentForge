@@ -16,6 +16,9 @@ dependencies = [
     "langgraph>=0.2",
     "openai>=1.55",
     "langchain>=0.3",
+    # ── 星盘分析工具 (M1) ──
+    "pyswisseph>=2.10.3.2",
+    "tzdata>=2024.1",
 ]
 
 [project.optional-dependencies]

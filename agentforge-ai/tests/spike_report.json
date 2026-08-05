@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-08-04T17:28:33.918692+00:00",
+  "python_version": "3.11.9",
+  "ephe_path": "D:\\CODE\\AgentForge\\agentforge-ai\\app\\tools\\data\\ephe",
+  "ephe_files": {
+    "sepl_18.se1": 484061,
+    "semo_18.se1": 1304771
+  },
+  "results": {
+    "a_pyswisseph": "PASS",
+    "b_zoneinfo": "PASS",
+    "c_placidus": "PASS"
+  }
+}

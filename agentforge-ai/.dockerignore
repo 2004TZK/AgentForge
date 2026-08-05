@@ -1,0 +1,7 @@
+# Python 缓存与测试产物（历书数据 app/tools/data/ephe/ 必须保留，随 COPY . . 打包）
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+tests/
+spike_report.json

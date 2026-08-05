@@ -1,0 +1,30 @@
+Swiss Ephemeris Data Files - Copyright Notice
+==============================================
+
+Files: sepl_18.se1 (planets, 1800-2399), semo_18.se1 (moon, 1800-2399)
+Source: https://github.com/aloistr/swisseph (official Astrodienst repository)
+Downloaded: 2026-08-05
+
+License: Swiss Ephemeris Public License (dual-licensed AGPL-3.0 / Commercial)
+        See: https://www.astro.com/swisseph/swephinfo_e.htm
+
+Copyright (c) Astrodienst AG, Zollikon/Zurich, Switzerland
+
+The Swiss Ephemeris data files (se1) are:
+- Based on NASA/JPL planetary ephemerides (DE431)
+- Compressed by Astrodienst for efficient storage
+- Free for use under AGPL-3.0, or a commercial license can be purchased
+
+This project (AgentForge) is MIT-licensed. The inclusion of Swiss Ephemeris
+data files and the pyswisseph library (AGPL-3.0) creates a licensing dependency:
+
+1. Self-hosted / personal use: AGPL-3.0 applies to the combined work
+2. Commercial SaaS deployment: requires a Swiss Ephemeris commercial license
+   from Astrodienst (https://www.astro.com/swisseph/)
+3. Interview/demo use: self-hosted demonstration is acceptable under AGPL-3.0
+
+The data files cover years 1800-2399, sufficient for all practical birth chart
+calculations. Files are ~1.8MB total (compressed se1 format).
+
+For full license text, see: https://www.gnu.org/licenses/agpl-3.0.html
+Astrodienst Swiss Ephemeris license: https://www.astro.com/swisseph/swephinfo_e.htm

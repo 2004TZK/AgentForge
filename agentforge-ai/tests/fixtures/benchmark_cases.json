@@ -1,0 +1,1529 @@
+{
+  "description": "star_chart 验收基准用例 — Tropical + Geocentric + Placidus（中国时区场景）",
+  "generatedBy": "scripts/generate_benchmark.py (pyswisseph)",
+  "tolerance": 0.5,
+  "toleranceUnit": "degree",
+  "caseCount": 10,
+  "cases": [
+    {
+      "label": "case_01_normal_beijing",
+      "notes": "正常案例：北京，无夏令时（1994年中国已取消夏令时）",
+      "birthDate": "1994-05-20",
+      "birthTime": "14:30",
+      "latitude": 39.9042,
+      "longitude": 116.4074,
+      "timezone": "Asia/Shanghai",
+      "localDateTime": "1994-05-20T14:30:00+08:00",
+      "utDateTime": "1994-05-20T06:30:00Z",
+      "julianDay": 2449492.770833,
+      "expected": {
+        "meta": {
+          "zodiac": "tropical",
+          "houseSystem": "placidus",
+          "houseSystemFallback": false,
+          "ephemeris": "pyswisseph"
+        },
+        "ascendant": {
+          "longitude": 181.2775,
+          "sign": "天秤座",
+          "degree": 1.2775
+        },
+        "midheaven": {
+          "longitude": 91.4653,
+          "sign": "巨蟹座",
+          "degree": 1.4653
+        },
+        "descendant": {
+          "longitude": 1.2775,
+          "sign": "白羊座",
+          "degree": 1.2775
+        },
+        "imumCoeli": {
+          "longitude": 271.4653,
+          "sign": "摩羯座",
+          "degree": 1.4653
+        },
+        "planets": {
+          "sun": {
+            "longitude": 59.0256,
+            "sign": "金牛座",
+            "signIndex": 1,
+            "degree": 29.0256
+          },
+          "moon": {
+            "longitude": 171.417,
+            "sign": "处女座",
+            "signIndex": 5,
+            "degree": 21.417
+          },
+          "mercury": {
+            "longitude": 78.9622,
+            "sign": "双子座",
+            "signIndex": 2,
+            "degree": 18.9622
+          },
+          "venus": {
+            "longitude": 89.0526,
+            "sign": "双子座",
+            "signIndex": 2,
+            "degree": 29.0526
+          },
+          "mars": {
+            "longitude": 27.2374,
+            "sign": "白羊座",
+            "signIndex": 0,
+            "degree": 27.2374
+          },
+          "jupiter": {
+            "longitude": 217.3563,
+            "sign": "天蝎座",
+            "signIndex": 7,
+            "degree": 7.3563
+          },
+          "saturn": {
+            "longitude": 341.4702,
+            "sign": "双鱼座",
+            "signIndex": 11,
+            "degree": 11.4702
+          },
+          "uranus": {
+            "longitude": 296.1903,
+            "sign": "摩羯座",
+            "signIndex": 9,
+            "degree": 26.1903
+          },
+          "neptune": {
+            "longitude": 293.1871,
+            "sign": "摩羯座",
+            "signIndex": 9,
+            "degree": 23.1871
+          },
+          "pluto": {
+            "longitude": 236.6262,
+            "sign": "天蝎座",
+            "signIndex": 7,
+            "degree": 26.6262
+          }
+        },
+        "houses": {
+          "1": {
+            "cusp": 181.2775,
+            "sign": "天秤座"
+          },
+          "2": {
+            "cusp": 207.5642,
+            "sign": "天秤座"
+          },
+          "3": {
+            "cusp": 238.0381,
+            "sign": "天蝎座"
+          },
+          "4": {
+            "cusp": 271.4653,
+            "sign": "摩羯座"
+          },
+          "5": {
+            "cusp": 304.8466,
+            "sign": "水瓶座"
+          },
+          "6": {
+            "cusp": 335.1951,
+            "sign": "双鱼座"
+          },
+          "7": {
+            "cusp": 1.2775,
+            "sign": "白羊座"
+          },
+          "8": {
+            "cusp": 27.5642,
+            "sign": "白羊座"
+          },
+          "9": {
+            "cusp": 58.0381,
+            "sign": "金牛座"
+          },
+          "10": {
+            "cusp": 91.4653,
+            "sign": "巨蟹座"
+          },
+          "11": {
+            "cusp": 124.8466,
+            "sign": "狮子座"
+          },
+          "12": {
+            "cusp": 155.1951,
+            "sign": "处女座"
+          }
+        }
+      }
+    },
+    {
+      "label": "case_02_china_dst_1988",
+      "notes": "中国夏令时：1988年7月15日，UTC+9（夏令时），验证时区换算",
+      "birthDate": "1988-07-15",
+      "birthTime": "10:00",
+      "latitude": 31.2304,
+      "longitude": 121.4737,
+      "timezone": "Asia/Shanghai",
+      "localDateTime": "1988-07-15T10:00:00+09:00",
+      "utDateTime": "1988-07-15T01:00:00Z",
+      "julianDay": 2447357.541667,
+      "expected": {
+        "meta": {
+          "zodiac": "tropical",
+          "houseSystem": "placidus",
+          "houseSystemFallback": false,
+          "ephemeris": "pyswisseph"
+        },
+        "ascendant": {
+          "longitude": 162.416,
+          "sign": "处女座",
+          "degree": 12.416
+        },
+        "midheaven": {
+          "longitude": 71.1402,
+          "sign": "双子座",
+          "degree": 11.1402
+        },
+        "descendant": {
+          "longitude": 342.416,
+          "sign": "双鱼座",
+          "degree": 12.416
+        },
+        "imumCoeli": {
+          "longitude": 251.1402,
+          "sign": "射手座",
+          "degree": 11.1402
+        },
+        "planets": {
+          "sun": {
+            "longitude": 112.7679,
+            "sign": "巨蟹座",
+            "signIndex": 3,
+            "degree": 22.7679
+          },
+          "moon": {
+            "longitude": 125.4666,
+            "sign": "狮子座",
+            "signIndex": 4,
+            "degree": 5.4666
+          },
+          "mercury": {
+            "longitude": 93.9561,
+            "sign": "巨蟹座",
+            "signIndex": 3,
+            "degree": 3.9561
+          },
+          "venus": {
+            "longitude": 75.89,
+            "sign": "双子座",
+            "signIndex": 2,
+            "degree": 15.89
+          },
+          "mars": {
+            "longitude": 0.553,
+            "sign": "白羊座",
+            "signIndex": 0,
+            "degree": 0.553
+          },
+          "jupiter": {
+            "longitude": 58.7665,
+            "sign": "金牛座",
+            "signIndex": 1,
+            "degree": 28.7665
+          },
+          "saturn": {
+            "longitude": 267.5245,
+            "sign": "射手座",
+            "signIndex": 8,
+            "degree": 27.5245
+          },
+          "uranus": {
+            "longitude": 268.0833,
+            "sign": "射手座",
+            "signIndex": 8,
+            "degree": 28.0833
+          },
+          "neptune": {
+            "longitude": 278.4228,
+            "sign": "摩羯座",
+            "signIndex": 9,
+            "degree": 8.4228
+          },
+          "pluto": {
+            "longitude": 219.7667,
+            "sign": "天蝎座",
+            "signIndex": 7,
+            "degree": 9.7667
+          }
+        },
+        "houses": {
+          "1": {
+            "cusp": 162.416,
+            "sign": "处女座"
+          },
+          "2": {
+            "cusp": 188.876,
+            "sign": "天秤座"
+          },
+          "3": {
+            "cusp": 218.9628,
+            "sign": "天蝎座"
+          },
+          "4": {
+            "cusp": 251.1402,
+            "sign": "射手座"
+          },
+          "5": {
+            "cusp": 283.3424,
+            "sign": "摩羯座"
+          },
+          "6": {
+            "cusp": 314.0594,
+            "sign": "水瓶座"
+          },
+          "7": {
+            "cusp": 342.416,
+            "sign": "双鱼座"
+          },
+          "8": {
+            "cusp": 8.876,
+            "sign": "白羊座"
+          },
+          "9": {
+            "cusp": 38.9628,
+            "sign": "金牛座"
+          },
+          "10": {
+            "cusp": 71.1402,
+            "sign": "双子座"
+          },
+          "11": {
+            "cusp": 103.3424,
+            "sign": "巨蟹座"
+          },
+          "12": {
+            "cusp": 134.0594,
+            "sign": "狮子座"
+          }
+        }
+      }
+    },
+    {
+      "label": "case_03_china_dst_1986_first_year",
+      "notes": "中国夏令时首年：1986年5月（夏令时刚开始），UTC+9",
+      "birthDate": "1986-05-10",
+      "birthTime": "08:00",
+      "latitude": 39.9042,
+      "longitude": 116.4074,
+      "timezone": "Asia/Shanghai",
+      "localDateTime": "1986-05-10T08:00:00+09:00",
+      "utDateTime": "1986-05-09T23:00:00Z",
+      "julianDay": 2446560.458333,
+      "expected": {
+        "meta": {
+          "zodiac": "tropical",
+          "houseSystem": "placidus",
+          "houseSystemFallback": false,
+          "ephemeris": "pyswisseph"
+        },
+        "ascendant": {
+          "longitude": 80.6017,
+          "sign": "双子座",
+          "degree": 20.6017
+        },
+        "midheaven": {
+          "longitude": 326.6385,
+          "sign": "水瓶座",
+          "degree": 26.6385
+        },
+        "descendant": {
+          "longitude": 260.6017,
+          "sign": "射手座",
+          "degree": 20.6017
+        },
+        "imumCoeli": {
+          "longitude": 146.6385,
+          "sign": "狮子座",
+          "degree": 26.6385
+        },
+        "planets": {
+          "sun": {
+            "longitude": 49.0124,
+            "sign": "金牛座",
+            "signIndex": 1,
+            "degree": 19.0124
+          },
+          "moon": {
+            "longitude": 60.2806,
+            "sign": "双子座",
+            "signIndex": 2,
+            "degree": 0.2806
+          },
+          "mercury": {
+            "longitude": 34.5163,
+            "sign": "金牛座",
+            "signIndex": 1,
+            "degree": 4.5163
+          },
+          "venus": {
+            "longitude": 75.9896,
+            "sign": "双子座",
+            "signIndex": 2,
+            "degree": 15.9896
+          },
+          "mars": {
+            "longitude": 288.1127,
+            "sign": "摩羯座",
+            "signIndex": 9,
+            "degree": 18.1127
+          },
+          "jupiter": {
+            "longitude": 346.9409,
+            "sign": "双鱼座",
+            "signIndex": 11,
+            "degree": 16.9409
+          },
+          "saturn": {
+            "longitude": 247.7194,
+            "sign": "射手座",
+            "signIndex": 8,
+            "degree": 7.7194
+          },
+          "uranus": {
+            "longitude": 261.6215,
+            "sign": "射手座",
+            "signIndex": 8,
+            "degree": 21.6215
+          },
+          "neptune": {
+            "longitude": 275.5362,
+            "sign": "摩羯座",
+            "signIndex": 9,
+            "degree": 5.5362
+          },
+          "pluto": {
+            "longitude": 215.5976,
+            "sign": "天蝎座",
+            "signIndex": 7,
+            "degree": 5.5976
+          }
+        },
+        "houses": {
+          "1": {
+            "cusp": 80.6017,
+            "sign": "双子座"
+          },
+          "2": {
+            "cusp": 101.6614,
+            "sign": "巨蟹座"
+          },
+          "3": {
+            "cusp": 122.3791,
+            "sign": "狮子座"
+          },
+          "4": {
+            "cusp": 146.6385,
+            "sign": "狮子座"
+          },
+          "5": {
+            "cusp": 178.5931,
+            "sign": "处女座"
+          },
+          "6": {
+            "cusp": 219.7398,
+            "sign": "天蝎座"
+          },
+          "7": {
+            "cusp": 260.6017,
+            "sign": "射手座"
+          },
+          "8": {
+            "cusp": 281.6614,
+            "sign": "摩羯座"
+          },
+          "9": {
+            "cusp": 302.3791,
+            "sign": "水瓶座"
+          },
+          "10": {
+            "cusp": 326.6385,
+            "sign": "水瓶座"
+          },
+          "11": {
+            "cusp": 358.5931,
+            "sign": "双鱼座"
+          },
+          "12": {
+            "cusp": 39.7398,
+            "sign": "金牛座"
+          }
+        }
+      }
+    },
+    {
+      "label": "case_04_china_dst_1991_last_year",
+      "notes": "中国夏令时末年：1991年7月15日，UTC+9（1991年是最后一年实行夏令时）",
+      "birthDate": "1991-07-15",
+      "birthTime": "10:00",
+      "latitude": 23.1291,
+      "longitude": 113.2644,
+      "timezone": "Asia/Shanghai",
+      "localDateTime": "1991-07-15T10:00:00+09:00",
+      "utDateTime": "1991-07-15T01:00:00Z",
+      "julianDay": 2448452.541667,
+      "expected": {
+        "meta": {
+          "zodiac": "tropical",
+          "houseSystem": "placidus",
+          "houseSystemFallback": false,
+          "ephemeris": "pyswisseph"
+        },
+        "ascendant": {
+          "longitude": 153.1889,
+          "sign": "处女座",
+          "degree": 3.1889
+        },
+        "midheaven": {
+          "longitude": 62.7159,
+          "sign": "双子座",
+          "degree": 2.7159
+        },
+        "descendant": {
+          "longitude": 333.1889,
+          "sign": "双鱼座",
+          "degree": 3.1889
+        },
+        "imumCoeli": {
+          "longitude": 242.7159,
+          "sign": "射手座",
+          "degree": 2.7159
+        },
+        "planets": {
+          "sun": {
+            "longitude": 112.08,
+            "sign": "巨蟹座",
+            "signIndex": 3,
+            "degree": 22.08
+          },
+          "moon": {
+            "longitude": 157.0713,
+            "sign": "处女座",
+            "signIndex": 5,
+            "degree": 7.0713
+          },
+          "mercury": {
+            "longitude": 136.9071,
+            "sign": "狮子座",
+            "signIndex": 4,
+            "degree": 16.9071
+          },
+          "venus": {
+            "longitude": 152.2227,
+            "sign": "处女座",
+            "signIndex": 5,
+            "degree": 2.2227
+          },
+          "mars": {
+            "longitude": 149.7031,
+            "sign": "狮子座",
+            "signIndex": 4,
+            "degree": 29.7031
+          },
+          "jupiter": {
+            "longitude": 137.2159,
+            "sign": "狮子座",
+            "signIndex": 4,
+            "degree": 17.2159
+          },
+          "saturn": {
+            "longitude": 304.3873,
+            "sign": "水瓶座",
+            "signIndex": 10,
+            "degree": 4.3873
+          },
+          "uranus": {
+            "longitude": 281.3973,
+            "sign": "摩羯座",
+            "signIndex": 9,
+            "degree": 11.3973
+          },
+          "neptune": {
+            "longitude": 285.191,
+            "sign": "摩羯座",
+            "signIndex": 9,
+            "degree": 15.191
+          },
+          "pluto": {
+            "longitude": 227.6172,
+            "sign": "天蝎座",
+            "signIndex": 7,
+            "degree": 17.6172
+          }
+        },
+        "houses": {
+          "1": {
+            "cusp": 153.1889,
+            "sign": "处女座"
+          },
+          "2": {
+            "cusp": 180.6364,
+            "sign": "天秤座"
+          },
+          "3": {
+            "cusp": 211.0787,
+            "sign": "天蝎座"
+          },
+          "4": {
+            "cusp": 242.7159,
+            "sign": "射手座"
+          },
+          "5": {
+            "cusp": 273.8581,
+            "sign": "摩羯座"
+          },
+          "6": {
+            "cusp": 304.0491,
+            "sign": "水瓶座"
+          },
+          "7": {
+            "cusp": 333.1889,
+            "sign": "双鱼座"
+          },
+          "8": {
+            "cusp": 0.6364,
+            "sign": "白羊座"
+          },
+          "9": {
+            "cusp": 31.0787,
+            "sign": "金牛座"
+          },
+          "10": {
+            "cusp": 62.7159,
+            "sign": "双子座"
+          },
+          "11": {
+            "cusp": 93.8581,
+            "sign": "巨蟹座"
+          },
+          "12": {
+            "cusp": 124.0491,
+            "sign": "狮子座"
+          }
+        }
+      }
+    },
+    {
+      "label": "case_05_post_dst_summer",
+      "notes": "无夏令时夏季：1995年7月，成都，UTC+8（1992年起取消夏令时）",
+      "birthDate": "1995-07-20",
+      "birthTime": "14:00",
+      "latitude": 30.5728,
+      "longitude": 104.0668,
+      "timezone": "Asia/Shanghai",
+      "localDateTime": "1995-07-20T14:00:00+08:00",
+      "utDateTime": "1995-07-20T06:00:00Z",
+      "julianDay": 2449918.75,
+      "expected": {
+        "meta": {
+          "zodiac": "tropical",
+          "houseSystem": "placidus",
+          "houseSystemFallback": false,
+          "ephemeris": "pyswisseph"
+        },
+        "ascendant": {
+          "longitude": 215.8025,
+          "sign": "天蝎座",
+          "degree": 5.8025
+        },
+        "midheaven": {
+          "longitude": 129.1865,
+          "sign": "狮子座",
+          "degree": 9.1865
+        },
+        "descendant": {
+          "longitude": 35.8025,
+          "sign": "金牛座",
+          "degree": 5.8025
+        },
+        "imumCoeli": {
+          "longitude": 309.1865,
+          "sign": "水瓶座",
+          "degree": 9.1865
+        },
+        "planets": {
+          "sun": {
+            "longitude": 117.0765,
+            "sign": "巨蟹座",
+            "signIndex": 3,
+            "degree": 27.0765
+          },
+          "moon": {
+            "longitude": 35.9167,
+            "sign": "金牛座",
+            "signIndex": 1,
+            "degree": 5.9167
+          },
+          "mercury": {
+            "longitude": 108.0155,
+            "sign": "巨蟹座",
+            "signIndex": 3,
+            "degree": 18.0155
+          },
+          "venus": {
+            "longitude": 108.3444,
+            "sign": "巨蟹座",
+            "signIndex": 3,
+            "degree": 18.3444
+          },
+          "mars": {
+            "longitude": 179.33,
+            "sign": "处女座",
+            "signIndex": 5,
+            "degree": 29.33
+          },
+          "jupiter": {
+            "longitude": 245.8076,
+            "sign": "射手座",
+            "signIndex": 8,
+            "degree": 5.8076
+          },
+          "saturn": {
+            "longitude": 354.5919,
+            "sign": "双鱼座",
+            "signIndex": 11,
+            "degree": 24.5919
+          },
+          "uranus": {
+            "longitude": 298.5549,
+            "sign": "摩羯座",
+            "signIndex": 9,
+            "degree": 28.5549
+          },
+          "neptune": {
+            "longitude": 294.0802,
+            "sign": "摩羯座",
+            "signIndex": 9,
+            "degree": 24.0802
+          },
+          "pluto": {
+            "longitude": 237.9188,
+            "sign": "天蝎座",
+            "signIndex": 7,
+            "degree": 27.9188
+          }
+        },
+        "houses": {
+          "1": {
+            "cusp": 215.8025,
+            "sign": "天蝎座"
+          },
+          "2": {
+            "cusp": 244.7928,
+            "sign": "射手座"
+          },
+          "3": {
+            "cusp": 276.1601,
+            "sign": "摩羯座"
+          },
+          "4": {
+            "cusp": 309.1865,
+            "sign": "水瓶座"
+          },
+          "5": {
+            "cusp": 341.6226,
+            "sign": "双鱼座"
+          },
+          "6": {
+            "cusp": 10.806,
+            "sign": "白羊座"
+          },
+          "7": {
+            "cusp": 35.8025,
+            "sign": "金牛座"
+          },
+          "8": {
+            "cusp": 64.7928,
+            "sign": "双子座"
+          },
+          "9": {
+            "cusp": 96.1601,
+            "sign": "巨蟹座"
+          },
+          "10": {
+            "cusp": 129.1865,
+            "sign": "狮子座"
+          },
+          "11": {
+            "cusp": 161.6226,
+            "sign": "处女座"
+          },
+          "12": {
+            "cusp": 190.806,
+            "sign": "天秤座"
+          }
+        }
+      }
+    },
+    {
+      "label": "case_06_cross_day_midnight",
+      "notes": "跨日案例：北京 2000-01-01 02:00 CST → UTC 1999-12-31 18:00，UTC日期与本地日期不同",
+      "birthDate": "2000-01-01",
+      "birthTime": "02:00",
+      "latitude": 39.9042,
+      "longitude": 116.4074,
+      "timezone": "Asia/Shanghai",
+      "localDateTime": "2000-01-01T02:00:00+08:00",
+      "utDateTime": "1999-12-31T18:00:00Z",
+      "julianDay": 2451544.25,
+      "expected": {
+        "meta": {
+          "zodiac": "tropical",
+          "houseSystem": "placidus",
+          "houseSystemFallback": false,
+          "ephemeris": "pyswisseph"
+        },
+        "ascendant": {
+          "longitude": 208.7703,
+          "sign": "天秤座",
+          "degree": 28.7703
+        },
+        "midheaven": {
+          "longitude": 123.8089,
+          "sign": "狮子座",
+          "degree": 3.8089
+        },
+        "descendant": {
+          "longitude": 28.7703,
+          "sign": "白羊座",
+          "degree": 28.7703
+        },
+        "imumCoeli": {
+          "longitude": 303.8089,
+          "sign": "水瓶座",
+          "degree": 3.8089
+        },
+        "planets": {
+          "sun": {
+            "longitude": 279.6044,
+            "sign": "摩羯座",
+            "signIndex": 9,
+            "degree": 9.6044
+          },
+          "moon": {
+            "longitude": 214.2617,
+            "sign": "天蝎座",
+            "signIndex": 7,
+            "degree": 4.2617
+          },
+          "mercury": {
+            "longitude": 270.7236,
+            "sign": "摩羯座",
+            "signIndex": 9,
+            "degree": 0.7236
+          },
+          "venus": {
+            "longitude": 240.6593,
+            "sign": "射手座",
+            "signIndex": 8,
+            "degree": 0.6593
+          },
+          "mars": {
+            "longitude": 327.3816,
+            "sign": "水瓶座",
+            "signIndex": 10,
+            "degree": 27.3816
+          },
+          "jupiter": {
+            "longitude": 25.2235,
+            "sign": "白羊座",
+            "signIndex": 0,
+            "degree": 25.2235
+          },
+          "saturn": {
+            "longitude": 40.4111,
+            "sign": "金牛座",
+            "signIndex": 1,
+            "degree": 10.4111
+          },
+          "uranus": {
+            "longitude": 314.7716,
+            "sign": "水瓶座",
+            "signIndex": 10,
+            "degree": 14.7716
+          },
+          "neptune": {
+            "longitude": 303.1664,
+            "sign": "水瓶座",
+            "signIndex": 10,
+            "degree": 3.1664
+          },
+          "pluto": {
+            "longitude": 251.4283,
+            "sign": "射手座",
+            "signIndex": 8,
+            "degree": 11.4283
+          }
+        },
+        "houses": {
+          "1": {
+            "cusp": 208.7703,
+            "sign": "天秤座"
+          },
+          "2": {
+            "cusp": 236.9507,
+            "sign": "天蝎座"
+          },
+          "3": {
+            "cusp": 269.1201,
+            "sign": "射手座"
+          },
+          "4": {
+            "cusp": 303.8089,
+            "sign": "水瓶座"
+          },
+          "5": {
+            "cusp": 336.9272,
+            "sign": "双鱼座"
+          },
+          "6": {
+            "cusp": 5.3752,
+            "sign": "白羊座"
+          },
+          "7": {
+            "cusp": 28.7703,
+            "sign": "白羊座"
+          },
+          "8": {
+            "cusp": 56.9507,
+            "sign": "金牛座"
+          },
+          "9": {
+            "cusp": 89.1201,
+            "sign": "双子座"
+          },
+          "10": {
+            "cusp": 123.8089,
+            "sign": "狮子座"
+          },
+          "11": {
+            "cusp": 156.9272,
+            "sign": "处女座"
+          },
+          "12": {
+            "cusp": 185.3752,
+            "sign": "天秤座"
+          }
+        }
+      }
+    },
+    {
+      "label": "case_07_xinjiang_urumqi",
+      "notes": "新疆时区：乌鲁木齐，Asia/Urumqi UTC+6（与北京 UTC+8 差2小时）",
+      "birthDate": "1990-06-15",
+      "birthTime": "12:00",
+      "latitude": 43.8256,
+      "longitude": 87.6168,
+      "timezone": "Asia/Urumqi",
+      "localDateTime": "1990-06-15T12:00:00+06:00",
+      "utDateTime": "1990-06-15T06:00:00Z",
+      "julianDay": 2448057.75,
+      "expected": {
+        "meta": {
+          "zodiac": "tropical",
+          "houseSystem": "placidus",
+          "houseSystemFallback": false,
+          "ephemeris": "pyswisseph"
+        },
+        "ascendant": {
+          "longitude": 172.9843,
+          "sign": "处女座",
+          "degree": 22.9843
+        },
+        "midheaven": {
+          "longitude": 81.6234,
+          "sign": "双子座",
+          "degree": 21.6234
+        },
+        "descendant": {
+          "longitude": 352.9843,
+          "sign": "双鱼座",
+          "degree": 22.9843
+        },
+        "imumCoeli": {
+          "longitude": 261.6234,
+          "sign": "射手座",
+          "degree": 21.6234
+        },
+        "planets": {
+          "sun": {
+            "longitude": 83.8908,
+            "sign": "双子座",
+            "signIndex": 2,
+            "degree": 23.8908
+          },
+          "moon": {
+            "longitude": 342.0286,
+            "sign": "双鱼座",
+            "signIndex": 11,
+            "degree": 12.0286
+          },
+          "mercury": {
+            "longitude": 65.2631,
+            "sign": "双子座",
+            "signIndex": 2,
+            "degree": 5.2631
+          },
+          "venus": {
+            "longitude": 48.4836,
+            "sign": "金牛座",
+            "signIndex": 1,
+            "degree": 18.4836
+          },
+          "mars": {
+            "longitude": 10.8615,
+            "sign": "白羊座",
+            "signIndex": 0,
+            "degree": 10.8615
+          },
+          "jupiter": {
+            "longitude": 105.8353,
+            "sign": "巨蟹座",
+            "signIndex": 3,
+            "degree": 15.8353
+          },
+          "saturn": {
+            "longitude": 294.0466,
+            "sign": "摩羯座",
+            "signIndex": 9,
+            "degree": 24.0466
+          },
+          "uranus": {
+            "longitude": 278.1749,
+            "sign": "摩羯座",
+            "signIndex": 9,
+            "degree": 8.1749
+          },
+          "neptune": {
+            "longitude": 283.7233,
+            "sign": "摩羯座",
+            "signIndex": 9,
+            "degree": 13.7233
+          },
+          "pluto": {
+            "longitude": 225.4066,
+            "sign": "天蝎座",
+            "signIndex": 7,
+            "degree": 15.4066
+          }
+        },
+        "houses": {
+          "1": {
+            "cusp": 172.9843,
+            "sign": "处女座"
+          },
+          "2": {
+            "cusp": 197.7716,
+            "sign": "天秤座"
+          },
+          "3": {
+            "cusp": 227.6246,
+            "sign": "天蝎座"
+          },
+          "4": {
+            "cusp": 261.6234,
+            "sign": "射手座"
+          },
+          "5": {
+            "cusp": 296.0651,
+            "sign": "摩羯座"
+          },
+          "6": {
+            "cusp": 326.8902,
+            "sign": "水瓶座"
+          },
+          "7": {
+            "cusp": 352.9843,
+            "sign": "双鱼座"
+          },
+          "8": {
+            "cusp": 17.7716,
+            "sign": "白羊座"
+          },
+          "9": {
+            "cusp": 47.6246,
+            "sign": "金牛座"
+          },
+          "10": {
+            "cusp": 81.6234,
+            "sign": "双子座"
+          },
+          "11": {
+            "cusp": 116.0651,
+            "sign": "巨蟹座"
+          },
+          "12": {
+            "cusp": 146.8902,
+            "sign": "狮子座"
+          }
+        }
+      }
+    },
+    {
+      "label": "case_08_hong_kong",
+      "notes": "香港回归日：1997年7月1日 00:00，Asia/Hong_Kong UTC+8（香港1979年后无DST）",
+      "birthDate": "1997-07-01",
+      "birthTime": "00:00",
+      "latitude": 22.3193,
+      "longitude": 114.1694,
+      "timezone": "Asia/Hong_Kong",
+      "localDateTime": "1997-07-01T00:00:00+08:00",
+      "utDateTime": "1997-06-30T16:00:00Z",
+      "julianDay": 2450630.166667,
+      "expected": {
+        "meta": {
+          "zodiac": "tropical",
+          "houseSystem": "placidus",
+          "houseSystemFallback": false,
+          "ephemeris": "pyswisseph"
+        },
+        "ascendant": {
+          "longitude": 3.8787,
+          "sign": "白羊座",
+          "degree": 3.8787
+        },
+        "midheaven": {
+          "longitude": 272.6854,
+          "sign": "摩羯座",
+          "degree": 2.6854
+        },
+        "descendant": {
+          "longitude": 183.8787,
+          "sign": "天秤座",
+          "degree": 3.8787
+        },
+        "imumCoeli": {
+          "longitude": 92.6854,
+          "sign": "巨蟹座",
+          "degree": 2.6854
+        },
+        "planets": {
+          "sun": {
+            "longitude": 98.8872,
+            "sign": "巨蟹座",
+            "signIndex": 3,
+            "degree": 8.8872
+          },
+          "moon": {
+            "longitude": 49.0568,
+            "sign": "金牛座",
+            "signIndex": 1,
+            "degree": 19.0568
+          },
+          "mercury": {
+            "longitude": 104.7575,
+            "sign": "巨蟹座",
+            "signIndex": 3,
+            "degree": 14.7575
+          },
+          "venus": {
+            "longitude": 122.2977,
+            "sign": "狮子座",
+            "signIndex": 4,
+            "degree": 2.2977
+          },
+          "mars": {
+            "longitude": 185.1972,
+            "sign": "天秤座",
+            "signIndex": 6,
+            "degree": 5.1972
+          },
+          "jupiter": {
+            "longitude": 321.2699,
+            "sign": "水瓶座",
+            "signIndex": 10,
+            "degree": 21.2699
+          },
+          "saturn": {
+            "longitude": 19.4959,
+            "sign": "白羊座",
+            "signIndex": 0,
+            "degree": 19.4959
+          },
+          "uranus": {
+            "longitude": 307.7948,
+            "sign": "水瓶座",
+            "signIndex": 10,
+            "degree": 7.7948
+          },
+          "neptune": {
+            "longitude": 299.1118,
+            "sign": "摩羯座",
+            "signIndex": 9,
+            "degree": 29.1118
+          },
+          "pluto": {
+            "longitude": 243.3169,
+            "sign": "射手座",
+            "signIndex": 8,
+            "degree": 3.3169
+          }
+        },
+        "houses": {
+          "1": {
+            "cusp": 3.8787,
+            "sign": "白羊座"
+          },
+          "2": {
+            "cusp": 39.4253,
+            "sign": "金牛座"
+          },
+          "3": {
+            "cusp": 67.824,
+            "sign": "双子座"
+          },
+          "4": {
+            "cusp": 92.6854,
+            "sign": "巨蟹座"
+          },
+          "5": {
+            "cusp": 117.8827,
+            "sign": "巨蟹座"
+          },
+          "6": {
+            "cusp": 147.2663,
+            "sign": "狮子座"
+          },
+          "7": {
+            "cusp": 183.8787,
+            "sign": "天秤座"
+          },
+          "8": {
+            "cusp": 219.4253,
+            "sign": "天蝎座"
+          },
+          "9": {
+            "cusp": 247.824,
+            "sign": "射手座"
+          },
+          "10": {
+            "cusp": 272.6854,
+            "sign": "摩羯座"
+          },
+          "11": {
+            "cusp": 297.8827,
+            "sign": "摩羯座"
+          },
+          "12": {
+            "cusp": 327.2663,
+            "sign": "水瓶座"
+          }
+        }
+      }
+    },
+    {
+      "label": "case_09_taipei",
+      "notes": "中国台湾：台北，Asia/Taipei UTC+8（台湾1980年后无DST）",
+      "birthDate": "2000-05-20",
+      "birthTime": "08:00",
+      "latitude": 25.033,
+      "longitude": 121.5654,
+      "timezone": "Asia/Taipei",
+      "localDateTime": "2000-05-20T08:00:00+08:00",
+      "utDateTime": "2000-05-20T00:00:00Z",
+      "julianDay": 2451684.5,
+      "expected": {
+        "meta": {
+          "zodiac": "tropical",
+          "houseSystem": "placidus",
+          "houseSystemFallback": false,
+          "ephemeris": "pyswisseph"
+        },
+        "ascendant": {
+          "longitude": 100.0968,
+          "sign": "巨蟹座",
+          "degree": 10.0968
+        },
+        "midheaven": {
+          "longitude": 359.4764,
+          "sign": "双鱼座",
+          "degree": 29.4764
+        },
+        "descendant": {
+          "longitude": 280.0968,
+          "sign": "摩羯座",
+          "degree": 10.0968
+        },
+        "imumCoeli": {
+          "longitude": 179.4764,
+          "sign": "处女座",
+          "degree": 29.4764
+        },
+        "planets": {
+          "sun": {
+            "longitude": 59.2856,
+            "sign": "金牛座",
+            "signIndex": 1,
+            "degree": 29.2856
+          },
+          "moon": {
+            "longitude": 258.0684,
+            "sign": "射手座",
+            "signIndex": 8,
+            "degree": 18.0684
+          },
+          "mercury": {
+            "longitude": 71.9087,
+            "sign": "双子座",
+            "signIndex": 2,
+            "degree": 11.9087
+          },
+          "venus": {
+            "longitude": 53.2277,
+            "sign": "金牛座",
+            "signIndex": 1,
+            "degree": 23.2277
+          },
+          "mars": {
+            "longitude": 71.2727,
+            "sign": "双子座",
+            "signIndex": 2,
+            "degree": 11.2727
+          },
+          "jupiter": {
+            "longitude": 50.6845,
+            "sign": "金牛座",
+            "signIndex": 1,
+            "degree": 20.6845
+          },
+          "saturn": {
+            "longitude": 51.619,
+            "sign": "金牛座",
+            "signIndex": 1,
+            "degree": 21.619
+          },
+          "uranus": {
+            "longitude": 320.8127,
+            "sign": "水瓶座",
+            "signIndex": 10,
+            "degree": 20.8127
+          },
+          "neptune": {
+            "longitude": 306.5373,
+            "sign": "水瓶座",
+            "signIndex": 10,
+            "degree": 6.5373
+          },
+          "pluto": {
+            "longitude": 251.8825,
+            "sign": "射手座",
+            "signIndex": 8,
+            "degree": 11.8825
+          }
+        },
+        "houses": {
+          "1": {
+            "cusp": 100.0968,
+            "sign": "巨蟹座"
+          },
+          "2": {
+            "cusp": 123.5116,
+            "sign": "狮子座"
+          },
+          "3": {
+            "cusp": 149.253,
+            "sign": "狮子座"
+          },
+          "4": {
+            "cusp": 179.4764,
+            "sign": "处女座"
+          },
+          "5": {
+            "cusp": 213.7875,
+            "sign": "天蝎座"
+          },
+          "6": {
+            "cusp": 248.4034,
+            "sign": "射手座"
+          },
+          "7": {
+            "cusp": 280.0968,
+            "sign": "摩羯座"
+          },
+          "8": {
+            "cusp": 303.5116,
+            "sign": "水瓶座"
+          },
+          "9": {
+            "cusp": 329.253,
+            "sign": "水瓶座"
+          },
+          "10": {
+            "cusp": 359.4764,
+            "sign": "双鱼座"
+          },
+          "11": {
+            "cusp": 33.7875,
+            "sign": "金牛座"
+          },
+          "12": {
+            "cusp": 68.4034,
+            "sign": "双子座"
+          }
+        }
+      }
+    },
+    {
+      "label": "case_10_mohe_high_lat",
+      "notes": "高纬度：漠河 53.5°N（中国最北城市），测试 Placidus 在中国最高纬度的稳定性",
+      "birthDate": "1995-06-15",
+      "birthTime": "12:00",
+      "latitude": 53.4712,
+      "longitude": 122.5349,
+      "timezone": "Asia/Shanghai",
+      "localDateTime": "1995-06-15T12:00:00+08:00",
+      "utDateTime": "1995-06-15T04:00:00Z",
+      "julianDay": 2449883.666667,
+      "expected": {
+        "meta": {
+          "zodiac": "tropical",
+          "houseSystem": "placidus",
+          "houseSystemFallback": false,
+          "ephemeris": "pyswisseph"
+        },
+        "ascendant": {
+          "longitude": 176.9125,
+          "sign": "处女座",
+          "degree": 26.9125
+        },
+        "midheaven": {
+          "longitude": 85.8783,
+          "sign": "双子座",
+          "degree": 25.8783
+        },
+        "descendant": {
+          "longitude": 356.9125,
+          "sign": "双鱼座",
+          "degree": 26.9125
+        },
+        "imumCoeli": {
+          "longitude": 265.8783,
+          "sign": "射手座",
+          "degree": 25.8783
+        },
+        "planets": {
+          "sun": {
+            "longitude": 83.614,
+            "sign": "双子座",
+            "signIndex": 2,
+            "degree": 23.614
+          },
+          "moon": {
+            "longitude": 292.0318,
+            "sign": "摩羯座",
+            "signIndex": 9,
+            "degree": 22.0318
+          },
+          "mercury": {
+            "longitude": 69.9792,
+            "sign": "双子座",
+            "signIndex": 2,
+            "degree": 9.9792
+          },
+          "venus": {
+            "longitude": 65.4605,
+            "sign": "双子座",
+            "signIndex": 2,
+            "degree": 5.4605
+          },
+          "mars": {
+            "longitude": 159.9287,
+            "sign": "处女座",
+            "signIndex": 5,
+            "degree": 9.9287
+          },
+          "jupiter": {
+            "longitude": 248.8071,
+            "sign": "射手座",
+            "signIndex": 8,
+            "degree": 8.8071
+          },
+          "saturn": {
+            "longitude": 354.3784,
+            "sign": "双鱼座",
+            "signIndex": 11,
+            "degree": 24.3784
+          },
+          "uranus": {
+            "longitude": 299.8304,
+            "sign": "摩羯座",
+            "signIndex": 9,
+            "degree": 29.8304
+          },
+          "neptune": {
+            "longitude": 294.974,
+            "sign": "摩羯座",
+            "signIndex": 9,
+            "degree": 24.974
+          },
+          "pluto": {
+            "longitude": 238.5528,
+            "sign": "天蝎座",
+            "signIndex": 7,
+            "degree": 28.5528
+          }
+        },
+        "houses": {
+          "1": {
+            "cusp": 176.9125,
+            "sign": "处女座"
+          },
+          "2": {
+            "cusp": 199.9385,
+            "sign": "天秤座"
+          },
+          "3": {
+            "cusp": 229.5037,
+            "sign": "天蝎座"
+          },
+          "4": {
+            "cusp": 265.8783,
+            "sign": "射手座"
+          },
+          "5": {
+            "cusp": 302.768,
+            "sign": "水瓶座"
+          },
+          "6": {
+            "cusp": 333.1016,
+            "sign": "双鱼座"
+          },
+          "7": {
+            "cusp": 356.9125,
+            "sign": "双鱼座"
+          },
+          "8": {
+            "cusp": 19.9385,
+            "sign": "白羊座"
+          },
+          "9": {
+            "cusp": 49.5037,
+            "sign": "金牛座"
+          },
+          "10": {
+            "cusp": 85.8783,
+            "sign": "双子座"
+          },
+          "11": {
+            "cusp": 122.768,
+            "sign": "狮子座"
+          },
+          "12": {
+            "cusp": 153.1016,
+            "sign": "处女座"
+          }
+        }
+      }
+    }
+  ]
+}

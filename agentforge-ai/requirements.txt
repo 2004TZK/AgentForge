@@ -11,3 +11,6 @@ redis>=5.2
 pypdf>=5.1
 python-multipart>=0.0.17
 python-docx>=1.1.2
+# ── 星盘分析工具 (M1) ──
+pyswisseph>=2.10.3.2    # 瑞士星历表（AGPL-3.0，需 C 编译器）
+tzdata>=2024.1          # IANA 时区数据库（python:3.12-slim 需显式安装，含历史夏令时规则）
