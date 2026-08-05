@@ -217,7 +217,10 @@ onMounted(() => {
   <AppLayout>
     <div class="page-container">
       <div class="page-header">
-        <h2>{{ isEdit ? '编辑工作流' : '新建工作流' }}</h2>
+        <div>
+          <div class="eyebrow">{{ isEdit ? `WORKFLOW #${workflowId}` : 'WORKFLOW · NEW' }}</div>
+          <h2>{{ isEdit ? '编辑工作流' : '新建工作流' }}</h2>
+        </div>
         <button class="btn btn-secondary" @click="router.back()">返回</button>
       </div>
 
@@ -234,8 +237,11 @@ onMounted(() => {
           </div>
         </div>
 
+        <div class="section-label">
+          <span class="section-key">GRAPH</span>流程图谱
+        </div>
+
         <div class="form-item">
-          <label>只读图谱</label>
           <div v-if="graphNodes.length" class="graph">
             <template v-for="(node, idx) in graphNodes" :key="idx">
               <div class="graph-node" :class="node.type">
@@ -247,8 +253,12 @@ onMounted(() => {
           </div>
         </div>
 
+        <div class="section-label">
+          <span class="section-key">NODES</span>节点定义
+          <span class="section-hint">线性链，LLM 依据提示词 / 工具依据 Schema 执行</span>
+        </div>
+
         <div class="form-item">
-          <label>节点定义（线性链，LLM 依据提示词 / 工具依据 Schema 执行）</label>
           <div v-for="(node, index) in nodes" :key="index" class="node-card">
             <div class="node-row">
               <input
@@ -289,7 +299,9 @@ onMounted(() => {
 
         <template v-if="isEdit">
           <div class="run-section">
-            <h3>运行测试</h3>
+            <div class="section-label">
+              <span class="section-key">RUN</span>运行测试
+            </div>
             <div class="form-item">
               <label>运行输入（JSON，模板变量；对话触发时自动注入 message）</label>
               <textarea v-model="runInput" class="textarea" rows="2" />
@@ -303,7 +315,7 @@ onMounted(() => {
                 <span class="badge" :class="lastRun.status === 'SUCCESS' ? 'badge-ok' : 'badge-fail'">
                   {{ lastRun.status }}
                 </span>
-                <span class="muted">#{{ lastRun.id }} · {{ lastRun.startedTime }}</span>
+                <span class="run-id">#{{ lastRun.id }} · {{ lastRun.startedTime }}</span>
               </div>
               <div v-if="lastRun.output" class="run-output">{{ lastRun.output }}</div>
               <div v-if="lastRun.error" class="run-error">{{ lastRun.error }}</div>
@@ -337,7 +349,9 @@ onMounted(() => {
             </div>
 
             <div v-if="runs.length" class="runs-history">
-              <h3>运行记录</h3>
+              <div class="section-label">
+                <span class="section-key">HISTORY</span>运行记录
+              </div>
               <div v-for="run in runs" :key="run.id" class="run-row">
                 <button class="btn btn-secondary btn-sm" @click="lastRun = run">查看</button>
                 <span class="badge" :class="run.status === 'SUCCESS' ? 'badge-ok' : 'badge-fail'">

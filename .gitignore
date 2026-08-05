@@ -6,6 +6,7 @@
 # ===== 本机工具/临时目录 =====
 .claude/
 .tmp/
+.workbuddy/
 
 # ===== Java / Maven =====
 agentforge-backend/**/target/

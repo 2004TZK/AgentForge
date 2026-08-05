@@ -12,13 +12,20 @@ function getContainer(): HTMLDivElement {
   return container
 }
 
+/** 状态色对齐锻造工坊令牌：成功=铜绿 / 失败=铁锈 / 信息=墨黑 */
+const BG: Record<'success' | 'error' | 'info', string> = {
+  success: '#2e7d46',
+  error: '#b3261e',
+  info: '#221d15',
+}
+
 export function notify(message: string, type: 'success' | 'error' | 'info' = 'info'): void {
   const el = document.createElement('div')
-  const bg = type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'
+  const bg = BG[type]
   el.textContent = message
   el.style.cssText =
-    `background:${bg};color:#fff;padding:8px 16px;border-radius:8px;font-size:14px;` +
-    'box-shadow:0 2px 8px rgba(0,0,0,.2);animation:fadeIn .2s ease;'
+    `background:${bg};color:#fffdf7;padding:8px 16px;border-radius:6px;font-size:14px;` +
+    'box-shadow:0 2px 10px rgba(23,19,12,.28);animation:fadeIn .2s ease;'
   getContainer().appendChild(el)
   setTimeout(() => {
     el.style.transition = 'opacity .3s'

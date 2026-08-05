@@ -105,19 +105,24 @@ const html = computed(() => {
 }
 
 .markdown :deep(code) {
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--forge-tint);
+  color: var(--forge);
   padding: 1px 5px;
   border-radius: 4px;
-  font-size: 13px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
 }
 
 .markdown :deep(.md-code) {
-  background: #0f172a;
-  color: #e2e8f0;
+  background: #17130c;
+  color: #e8e2d4;
   padding: 12px;
   border-radius: 6px;
   overflow-x: auto;
-  font-size: 13px;
+  font-size: 12.5px;
+  font-family: var(--font-mono);
+  line-height: 1.6;
+  border: 1px solid #2e2820;
 }
 
 .markdown :deep(.md-code code) {

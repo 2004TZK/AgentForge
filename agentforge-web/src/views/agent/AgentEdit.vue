@@ -174,12 +174,19 @@ async function onSubmit(): Promise<void> {
   <AppLayout>
     <div class="page-container">
       <div class="page-header">
-        <h2>{{ isEdit ? '编辑智能体' : '新建智能体' }}</h2>
+        <div>
+          <div class="eyebrow">{{ isEdit ? `AGENT #${agentId}` : 'AGENT · NEW' }}</div>
+          <h2>{{ isEdit ? '编辑智能体' : '新建智能体' }}</h2>
+        </div>
         <button class="btn btn-secondary" @click="router.back()">返回</button>
       </div>
 
       <div v-if="loading" class="muted">加载中…</div>
       <div v-else class="card form">
+        <div class="section-label">
+          <span class="section-key">SPEC</span>基础规格
+        </div>
+
         <div class="form-item">
           <label>名称 *</label>
           <input v-model="name" class="input" placeholder="如：Java Expert" maxlength="100" />
@@ -190,19 +197,9 @@ async function onSubmit(): Promise<void> {
           <input v-model="description" class="input" placeholder="一句话描述这个智能体" maxlength="500" />
         </div>
 
-        <div class="form-item">
-          <label>系统提示词 *</label>
-          <textarea
-            v-model="systemPrompt"
-            class="textarea"
-            rows="5"
-            placeholder="定义智能体的角色与行为，如：你是一名资深Java工程师，帮助用户解决Java问题。"
-          />
-        </div>
-
         <div class="form-row">
           <div class="form-item">
-            <label>模型 Provider（M4）</label>
+            <label>模型 Provider</label>
             <select v-model="providerId" class="select">
               <option :value="null">内置 Ollama（本机）</option>
               <option v-for="p in providers" :key="p.id" :value="p.id">
@@ -215,7 +212,7 @@ async function onSubmit(): Promise<void> {
             <input
               v-if="!providerModels.length"
               v-model="modelName"
-              class="input"
+              class="input mono"
               placeholder="qwen3.5:0.8b"
             />
             <select v-else v-model="modelName" class="select">
@@ -224,12 +221,29 @@ async function onSubmit(): Promise<void> {
           </div>
           <div class="form-item">
             <label>温度（0-1）</label>
-            <input v-model.number="temperature" class="input" type="number" step="0.05" min="0" max="1" />
+            <input v-model.number="temperature" class="input mono" type="number" step="0.05" min="0" max="1" />
           </div>
         </div>
 
+        <div class="section-label">
+          <span class="section-key">PROMPT</span>角色设定
+        </div>
+
         <div class="form-item">
-          <label>运行模式（M3）</label>
+          <label>系统提示词 *</label>
+          <textarea
+            v-model="systemPrompt"
+            class="textarea"
+            rows="5"
+            placeholder="定义智能体的角色与行为，如：你是一名资深Java工程师，帮助用户解决Java问题。"
+          />
+        </div>
+
+        <div class="section-label">
+          <span class="section-key">MODE</span>运行方式
+        </div>
+
+        <div class="form-item">
           <div class="mode-row">
             <label class="mode-option">
               <input v-model="mode" type="radio" value="chat" />
@@ -253,8 +267,11 @@ async function onSubmit(): Promise<void> {
           </div>
         </div>
 
+        <div class="section-label">
+          <span class="section-key">SHARE</span>可见性
+        </div>
+
         <div class="form-item">
-          <label>可见性（M4）</label>
           <div class="mode-row">
             <label class="mode-option">
               <input v-model="visibility" type="radio" value="PRIVATE" />
@@ -267,8 +284,12 @@ async function onSubmit(): Promise<void> {
           </div>
         </div>
 
+        <div class="section-label">
+          <span class="section-key">TOOLS</span>工具配置
+          <span class="section-hint">LLM 依据 Schema 自主调用；工作流模式下忽略</span>
+        </div>
+
         <div class="form-item">
-          <label>工具配置（M3：LLM 依据 Schema 自主调用；工作流模式下忽略）</label>
           <div v-for="(tool, index) in tools" :key="index" class="tool-card">
             <div class="tool-row">
               <select
@@ -319,43 +340,15 @@ async function onSubmit(): Promise<void> {
 
 <style scoped>
 .form {
-  max-width: 720px;
-}
-
-.form-row {
-  display: flex;
-  gap: 16px;
-}
-
-.form-row .form-item {
-  flex: 1;
-}
-
-.mode-row {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-  margin-bottom: 8px;
-}
-
-.mode-option {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
+  max-width: 760px;
 }
 
 .workflow-select {
   max-width: 420px;
 }
 
-.small-tip {
-  font-size: 12px;
-  margin-top: 4px;
-}
-
 .tool-card {
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 10px 12px;
   margin-bottom: 8px;
@@ -390,7 +383,7 @@ async function onSubmit(): Promise<void> {
 .tool-config {
   margin-top: 8px;
   padding-top: 8px;
-  border-top: 1px dashed var(--color-border);
+  border-top: 1px dashed var(--line);
 }
 
 .tool-config .form-item {
@@ -399,9 +392,5 @@ async function onSubmit(): Promise<void> {
 
 .tool-config-label {
   font-size: 13px;
-}
-
-.form-actions {
-  margin-top: 8px;
 }
 </style>

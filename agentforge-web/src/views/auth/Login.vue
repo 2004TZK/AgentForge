@@ -1,25 +1,26 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import ForgeMark from '../../components/common/ForgeMark.vue'
 import { useAuthStore } from '../../stores/auth'
+import { notifyError } from '../../utils/notify'
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 
 const form = reactive({ username: '', password: '' })
+const showPassword = ref(false)
 const submitting = ref(false)
 
 async function onSubmit(): Promise<void> {
   if (!form.username || !form.password) {
-    ElMessage.error('请输入用户名和密码')
+    notifyError('请输入用户名和密码')
     return
   }
   submitting.value = true
   try {
     await authStore.login(form.username.trim(), form.password)
-    ElMessage.success('登录成功')
     const redirect = (route.query.redirect as string) || '/agents'
     router.push(redirect)
   } catch {
@@ -33,64 +34,77 @@ async function onSubmit(): Promise<void> {
 <template>
   <div class="auth-page">
     <div class="auth-card card">
-      <h1 class="auth-title">AgentForge</h1>
-      <p class="muted">登录以继续</p>
-      <el-form label-position="top" @submit.prevent="onSubmit">
-        <el-form-item label="用户名">
-          <el-input
+      <div class="auth-brand">
+        <ForgeMark :size="44" />
+        <div class="auth-wordmark">AGENTFORGE</div>
+      </div>
+      <p class="auth-eyebrow">Workshop · Sign In</p>
+
+      <form class="auth-form" @submit.prevent="onSubmit">
+        <div class="form-item">
+          <label for="username">用户名</label>
+          <input
+            id="username"
             v-model="form.username"
+            class="input"
             placeholder="请输入用户名"
             autocomplete="username"
-            @keyup.enter="onSubmit"
           />
-        </el-form-item>
-        <el-form-item label="密码">
-          <el-input
-            v-model="form.password"
-            type="password"
-            show-password
-            placeholder="请输入密码"
-            autocomplete="current-password"
-            @keyup.enter="onSubmit"
-          />
-        </el-form-item>
-        <el-button class="auth-submit" type="primary" native-type="submit" :loading="submitting">
-          登录
-        </el-button>
-      </el-form>
+        </div>
+        <div class="form-item">
+          <label for="password">密码</label>
+          <div class="password-wrap">
+            <input
+              id="password"
+              v-model="form.password"
+              class="input"
+              :type="showPassword ? 'text' : 'password'"
+              placeholder="请输入密码"
+              autocomplete="current-password"
+            />
+            <button
+              type="button"
+              class="password-toggle"
+              :aria-label="showPassword ? '隐藏密码' : '显示密码'"
+              @click="showPassword = !showPassword"
+            >
+              {{ showPassword ? '隐藏' : '显示' }}
+            </button>
+          </div>
+        </div>
+        <button class="btn auth-submit" type="submit" :disabled="submitting">
+          {{ submitting ? '正在进入…' : '进入工坊' }}
+        </button>
+      </form>
+
       <p class="muted auth-switch">
         还没有账号？<router-link to="/register">立即注册</router-link>
       </p>
+      <p class="auth-footer">Open Source · MIT — Forge Your Agents</p>
     </div>
   </div>
 </template>
 
 <style scoped>
-.auth-page {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(160deg, #eff6ff 0%, #f5f6f8 100%);
+.password-wrap {
+  position: relative;
 }
 
-.auth-card {
-  width: 360px;
-  padding: 32px;
+.password-toggle {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: var(--steel);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 4px;
 }
 
-.auth-title {
-  margin: 0 0 4px;
-  font-size: 22px;
-}
-
-.auth-submit {
-  width: 100%;
-  margin-top: 8px;
-}
-
-.auth-switch {
-  margin-top: 16px;
-  text-align: center;
+.password-toggle:hover {
+  color: var(--forge);
 }
 </style>

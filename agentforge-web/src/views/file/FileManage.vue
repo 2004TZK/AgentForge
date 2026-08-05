@@ -103,7 +103,10 @@ onUnmounted(() => {
   <AppLayout>
     <div class="page-container">
       <div class="page-header">
-        <h2>文件管理</h2>
+        <div>
+          <div class="eyebrow">FILES · {{ total }}</div>
+          <h2>文件管理</h2>
+        </div>
         <FileUpload v-if="selectedAgentId" :agent-id="selectedAgentId" @uploaded="loadDocs" />
       </div>
 
@@ -130,7 +133,7 @@ onUnmounted(() => {
           <tbody>
             <tr v-for="doc in documents" :key="doc.id">
               <td>{{ doc.fileName }}</td>
-              <td class="muted">{{ doc.fileType }}</td>
+              <td class="muted mono">{{ doc.fileType }}</td>
               <td>
                 <span class="badge" :class="`badge-${doc.status.toLowerCase()}`">
                   {{ STATUS_TEXT[doc.status] }}

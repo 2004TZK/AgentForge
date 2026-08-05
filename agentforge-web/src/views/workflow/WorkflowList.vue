@@ -54,7 +54,10 @@ onMounted(load)
   <AppLayout>
     <div class="page-container">
       <div class="page-header">
-        <h2>工作流</h2>
+        <div>
+          <div class="eyebrow">WORKFLOWS · {{ total }}</div>
+          <h2>工作流</h2>
+        </div>
         <button class="btn" @click="goCreate">+ 新建工作流</button>
       </div>
 
@@ -78,7 +81,7 @@ onMounted(load)
             <tr v-for="wf in list" :key="wf.id">
               <td>{{ wf.name }}</td>
               <td class="muted">{{ wf.description || '-' }}</td>
-              <td>{{ wf.nodes.length }}</td>
+              <td class="mono">{{ wf.nodes.length }}</td>
               <td>
                 <span class="badge" :class="wf.status === 'ACTIVE' ? 'badge-ok' : 'badge-warn'">
                   {{ wf.status }}
@@ -113,44 +116,7 @@ onMounted(load)
 .empty-tip {
   padding: 32px;
   line-height: 1.8;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.table th,
-.table td {
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--color-border);
   text-align: left;
-  font-size: 14px;
-}
-
-.col-actions {
-  white-space: nowrap;
-  width: 160px;
-}
-
-.col-actions .btn {
-  margin-right: 6px;
-}
-
-.badge {
-  padding: 2px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-}
-
-.badge-ok {
-  background: rgba(34, 197, 94, 0.12);
-  color: #16a34a;
-}
-
-.badge-warn {
-  background: rgba(245, 158, 11, 0.12);
-  color: #d97706;
 }
 
 .pager {

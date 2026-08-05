@@ -57,7 +57,10 @@ onMounted(load)
   <AppLayout>
     <div class="page-container">
       <div class="page-header">
-        <h2>智能体</h2>
+        <div>
+          <div class="eyebrow">AGENTS · {{ agentStore.total }}</div>
+          <h2>智能体</h2>
+        </div>
         <button class="btn" @click="goCreate">+ 新建智能体</button>
       </div>
 
@@ -91,8 +94,8 @@ onMounted(load)
                 <span v-if="!isOwner(agent.creatorId)" class="muted"> · 他人创建</span>
               </td>
               <td class="muted ellipsis">{{ agent.description || '-' }}</td>
-              <td>{{ agent.modelName }}</td>
-              <td>{{ agent.temperature }}</td>
+              <td class="mono">{{ agent.modelName }}</td>
+              <td class="mono">{{ agent.temperature }}</td>
               <td>
                 <span class="badge" :class="agent.visibility === 'PUBLIC' ? 'badge-ok' : 'badge-muted'">
                   {{ agent.visibility === 'PUBLIC' ? '公开' : '私有' }}
@@ -139,40 +142,8 @@ onMounted(load)
 </template>
 
 <style scoped>
-.toolbar {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-
-.search-input {
-  max-width: 260px;
-}
-
-.ellipsis {
-  max-width: 260px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-td .btn {
-  margin-right: 6px;
-}
-
-.badge {
-  padding: 2px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-}
-
-.badge-ok {
-  background: rgba(34, 197, 94, 0.12);
-  color: #16a34a;
-}
-
 .badge-muted {
-  background: rgba(148, 163, 184, 0.15);
-  color: #94a3b8;
+  background: rgba(111, 106, 91, 0.14);
+  color: var(--steel);
 }
 </style>
