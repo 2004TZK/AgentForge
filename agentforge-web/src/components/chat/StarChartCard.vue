@@ -5,6 +5,7 @@
  * 数据由 chat store 在 onTool 事件中解析 JSON 填充（msg.chart）。
  */
 import type { StarChartData } from '../../types/chat'
+import ZodiacWheel from './ZodiacWheel.vue'
 
 defineProps<{ chart: StarChartData }>()
 
@@ -53,6 +54,9 @@ function formatDegree(degree: number): string {
         <span v-if="chart.meta.houseSystemFallback" class="chart-fallback" title="高纬度 Placidus 计算失败，已自动降级整宫制">降级</span>
       </span>
     </div>
+
+    <!-- 黄道圈示意图（M3.3.1） -->
+    <ZodiacWheel :chart="chart" />
 
     <!-- 四轴 -->
     <div class="chart-angles">
