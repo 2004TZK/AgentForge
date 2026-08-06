@@ -216,7 +216,9 @@ public class AgentServiceImpl implements AgentService {
                 .collect(Collectors.toMap(AgentTool::getToolName,
                         t -> t.getToolConfig() == null ? Map.of() : t.getToolConfig(),
                         (a, b) -> a));
-        agentToolMapper.delete(new LambdaQueryWrapper<AgentTool>().eq(AgentTool::getAgentId, agentId));
+        // 物理删除旧配置：逻辑删除会保留 deleted=1 的旧行，
+        // 重插同名工具时撞唯一键 (agent_id, tool_name) → DuplicateKeyException
+        agentToolMapper.physicallyDeleteByAgentId(agentId);
         saveTools(agentId, tools, operatorId, oldConfigs);
     }
 

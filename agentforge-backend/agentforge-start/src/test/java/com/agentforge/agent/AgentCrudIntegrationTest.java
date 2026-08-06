@@ -101,6 +101,48 @@ class AgentCrudIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
+    @DisplayName("更新携带工具配置（整体替换）不触发唯一键冲突")
+    void updateWithTools() throws Exception {
+        String token = registerAndLogin("alice");
+        MvcResult created = mockMvc.perform(post("/agent")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"工具更新助手","systemPrompt":"测试","tools":[
+                                  {"toolName":"calculator","enabled":true}]}"""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andReturn();
+        long agentId = extractId(created);
+
+        // 整体替换：保留 calculator 并新增 github —— 旧行物理删除后重插，不得报唯一键冲突
+        mockMvc.perform(put("/agent/{id}", agentId)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"工具更新助手","systemPrompt":"测试","tools":[
+                                  {"toolName":"calculator","enabled":false},
+                                  {"toolName":"github","enabled":true}]}"""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.tools.length()").value(2))
+                .andExpect(jsonPath("$.data.tools[0].toolName").value("calculator"))
+                .andExpect(jsonPath("$.data.tools[0].enabled").value(false));
+
+        // 再更新一次（同名工具再次整体替换）仍应成功
+        mockMvc.perform(put("/agent/{id}", agentId)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"工具更新助手","systemPrompt":"测试","tools":[
+                                  {"toolName":"github","enabled":true}]}"""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.tools.length()").value(1))
+                .andExpect(jsonPath("$.data.tools[0].toolName").value("github"));
+    }
+
+    @Test
     @DisplayName("删除后详情返回 10003（逻辑删除）")
     void deleteAgent() throws Exception {
         String token = registerAndLogin("alice");
