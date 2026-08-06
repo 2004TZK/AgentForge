@@ -15,6 +15,12 @@ public class ToolTestRequest {
     @NotBlank(message = "工具类型不能为空")
     private String toolType;
 
+    /** 内置工具名（toolType=builtin 时必填） */
+    private String toolName;
+
+    /** 内置工具配置（toolType=builtin 时的默认配置） */
+    private Map<String, Object> toolConfig;
+
     /** HTTP 请求定义（toolType=http） */
     private Map<String, Object> httpConfig;
 

@@ -23,11 +23,14 @@ const saving = ref(false)
 const testing = ref(false)
 
 // ---- 基本信息 ----
-const toolType = ref<'http' | 'script'>('http')
+const toolType = ref<'http' | 'script' | 'builtin'>('http')
 const name = ref('')
 const displayName = ref('')
 const description = ref('')
 const visibility = ref<'PRIVATE' | 'PUBLIC'>('PRIVATE')
+/** 内置工具副本（只读引用，编辑页来自复制入口） */
+const builtinName = ref('')
+const defaultsRows = ref<{ key: string; value: string }[]>([])
 
 // ---- 参数 Schema 行式编辑 ----
 const paramRows = ref<ParamRow[]>([{ key: '', type: 'string', description: '', required: true }])
@@ -122,15 +125,29 @@ function buildScriptConfig(): Record<string, unknown> {
   return { language: scriptLanguage.value, source: source.value, entrypoint: 'run' }
 }
 
+function defaultsMap(): Record<string, unknown> {
+  const map: Record<string, unknown> = {}
+  for (const row of defaultsRows.value) {
+    if (row.key.trim()) map[row.key.trim()] = row.value
+  }
+  return map
+}
+
 function buildPayload() {
   return {
     name: name.value.trim(),
     displayName: displayName.value.trim(),
     description: description.value.trim() || undefined,
     toolType: toolType.value,
+    builtinName: toolType.value === 'builtin' ? builtinName.value : null,
     parameters: buildParameters(),
     httpConfig: toolType.value === 'http' ? buildHttpConfig() : null,
-    scriptConfig: toolType.value === 'script' ? buildScriptConfig() : null,
+    scriptConfig:
+      toolType.value === 'script'
+        ? buildScriptConfig()
+        : toolType.value === 'builtin'
+          ? { defaults: defaultsMap() }
+          : null,
     visibility: visibility.value,
   }
 }
@@ -138,8 +155,15 @@ function buildPayload() {
 function buildTestPayload() {
   return {
     toolType: toolType.value,
+    toolName: toolType.value === 'builtin' ? builtinName.value : undefined,
+    toolConfig: toolType.value === 'builtin' ? defaultsMap() : undefined,
     httpConfig: toolType.value === 'http' ? buildHttpConfig() : null,
-    scriptConfig: toolType.value === 'script' ? buildScriptConfig() : null,
+    scriptConfig:
+      toolType.value === 'script'
+        ? buildScriptConfig()
+        : toolType.value === 'builtin'
+          ? { defaults: defaultsMap() }
+          : null,
     parameters: buildParameters(),
     args: JSON.parse(testArgsText.value || '{}') as Record<string, unknown>,
   }
@@ -204,6 +228,15 @@ async function loadDetail(): Promise<void> {
     fillParamRows(detail.parameters)
     if (detail.toolType === 'http') {
       fillHttpConfig(detail.httpConfig as unknown as Record<string, unknown>)
+    } else if (detail.toolType === 'builtin') {
+      builtinName.value = detail.builtinName ?? ''
+      const builtinCfg = detail.scriptConfig as unknown as
+        | { defaults?: Record<string, unknown> }
+        | null
+        | undefined
+      defaultsRows.value = builtinCfg?.defaults
+        ? Object.entries(builtinCfg.defaults).map(([key, value]) => ({ key, value: String(value) }))
+        : []
     } else {
       scriptLanguage.value = (detail.scriptConfig?.language as 'python' | 'javascript') ?? 'python'
       source.value = detail.scriptConfig?.source ?? ''
@@ -342,7 +375,15 @@ function onTypeChange(): void {
           <span class="section-key">TYPE</span>工具形态
         </div>
 
-        <div class="form-item">
+        <div v-if="toolType === 'builtin'" class="form-item">
+          <label>内置工具引用</label>
+          <input :value="builtinName" class="input mono" readonly />
+          <p class="muted small-tip">
+            这是系统内置工具「{{ builtinName }}」的可编辑副本：执行逻辑沿用内置实现，
+            可修改名称/描述/参数与默认配置；测试与绑定后按你的配置运行。
+          </p>
+        </div>
+        <div v-else class="form-item">
           <div class="mode-row">
             <label class="mode-option">
               <input v-model="toolType" type="radio" value="http" @change="onTypeChange" />
@@ -354,6 +395,23 @@ function onTypeChange(): void {
             </label>
           </div>
         </div>
+
+        <!-- 内置工具副本：默认配置 -->
+        <template v-if="toolType === 'builtin'">
+          <div class="section-label">
+            <span class="section-key">DEFAULTS</span>默认配置
+          </div>
+          <div class="form-item">
+            <div v-for="(row, i) in defaultsRows" :key="i" class="param-row">
+              <input v-model="row.key" class="input mono param-key" placeholder="配置项名（如 api_key）" />
+              <input v-model="row.value" class="input param-value" placeholder="默认值（含密钥自动加密）" />
+              <button class="btn btn-danger btn-sm" @click="defaultsRows.splice(i, 1)">×</button>
+            </div>
+            <button class="btn btn-secondary btn-sm" @click="defaultsRows.push({ key: '', value: '' })">
+              + 添加配置项
+            </button>
+          </div>
+        </template>
 
         <div class="section-label">
           <span class="section-key">SCHEMA</span>调用参数（LLM 按此填充）

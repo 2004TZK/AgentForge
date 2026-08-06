@@ -34,6 +34,11 @@ export function apiCopyToolDefinition(id: number): Promise<ToolDefinition> {
   return http.post<ToolDefinition>(`/tool-definitions/${id}/copy`)
 }
 
+/** 复制系统内置工具为本人可编辑副本（tool_type=builtin） */
+export function apiCopyBuiltinToolDefinition(name: string): Promise<ToolDefinition> {
+  return http.post<ToolDefinition>(`/tool-definitions/from-builtin/${name}`)
+}
+
 /** 测试工具定义（HTTP 直发 / 代码进沙箱真实执行） */
 export function apiTestToolDefinition(data: ToolTestPayload): Promise<ToolTestResult> {
   return http.post<ToolTestResult>('/tool-definitions/test', data)

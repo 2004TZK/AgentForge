@@ -39,6 +39,9 @@ public class ToolDefinition {
     /** http / script */
     private String toolType;
 
+    /** 内置工具引用（tool_type=builtin 时：calculator / github / star_chart 等） */
+    private String builtinName;
+
     /** LLM 调用参数 Schema（OpenAI function parameters） */
     @TableField(typeHandler = JacksonTypeHandler.class)
     private Map<String, Object> parameters;

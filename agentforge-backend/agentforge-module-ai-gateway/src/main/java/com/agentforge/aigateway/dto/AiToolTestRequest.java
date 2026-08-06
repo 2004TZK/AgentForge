@@ -16,6 +16,10 @@ public class AiToolTestRequest {
     /** http / script */
     private String toolType;
 
+    private String toolName;
+
+    private Map<String, Object> toolConfig;
+
     private Map<String, Object> httpConfig;
 
     private Map<String, Object> scriptConfig;

@@ -62,6 +62,7 @@ CREATE TABLE IF NOT EXISTS `tool_definition` (
   `display_name`  VARCHAR(100) NOT NULL,
   `description`   VARCHAR(500),
   `tool_type`     VARCHAR(20)  NOT NULL,
+  `builtin_name`  VARCHAR(100),
   `parameters`    CLOB         NOT NULL,
   `http_config`   CLOB,
   `script_config` CLOB,

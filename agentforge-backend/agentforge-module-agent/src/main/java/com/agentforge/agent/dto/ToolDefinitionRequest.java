@@ -28,10 +28,13 @@ public class ToolDefinitionRequest {
     @Size(max = 500, message = "描述长度不能超过 500")
     private String description;
 
-    /** http / script */
+    /** http / script / builtin（builtin=内置工具副本，builtinName 必填） */
     @NotBlank(message = "工具类型不能为空")
-    @Pattern(regexp = "http|script", message = "工具类型仅支持 http / script")
+    @Pattern(regexp = "http|script|builtin", message = "工具类型仅支持 http / script / builtin")
     private String toolType;
+
+    /** 内置工具引用（toolType=builtin 时必填） */
+    private String builtinName;
 
     /** LLM 调用参数 Schema（OpenAI function parameters） */
     private Map<String, Object> parameters;

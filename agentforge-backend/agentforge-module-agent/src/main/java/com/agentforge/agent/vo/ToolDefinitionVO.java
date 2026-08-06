@@ -28,6 +28,9 @@ public class ToolDefinitionVO {
     /** http / script */
     private String toolType;
 
+    /** 内置工具引用（toolType=builtin 时） */
+    private String builtinName;
+
     /** LLM 调用参数 Schema */
     private Map<String, Object> parameters;
 

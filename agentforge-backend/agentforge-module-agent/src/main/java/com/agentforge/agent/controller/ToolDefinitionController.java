@@ -79,6 +79,12 @@ public class ToolDefinitionController {
         return Result.success(toolDefinitionService.copy(id, UserContext.getUserId()));
     }
 
+    @Operation(summary = "复制系统内置工具为本人可编辑副本（tool_type=builtin）")
+    @PostMapping("/from-builtin/{name}")
+    public Result<ToolDefinitionVO> copyFromBuiltin(@PathVariable String name) {
+        return Result.success(toolDefinitionService.copyBuiltin(name, UserContext.getUserId()));
+    }
+
     @Operation(summary = "测试自定义工具（HTTP 直发 / 代码进沙箱真实执行）")
     @PostMapping("/test")
     public Result<ToolTestResult> test(@Valid @RequestBody ToolTestRequest request) {

@@ -95,9 +95,15 @@ def list_tools() -> list[str]:
 def build_custom_handler(definition: dict):
     """根据工具定义构造执行闭包（HTTP 直发 / 代码进沙箱）。
 
-    definition: {name, description, parameters, httpConfig?/scriptConfig?}
+    definition: {name, description, parameters, httpConfig?/scriptConfig?/builtinName?}
+    builtinName: 内置工具副本 —— 执行仍走内置注册表实现，默认配置与智能体配置合并后传入
     返回 call(payload, config) -> str；定义缺少可执行配置时抛 ValueError。
     """
+    builtin_name = definition.get("builtinName")
+    if builtin_name:
+        defaults = definition.get("defaults") or {}
+        return lambda payload, config=None: call_tool(
+            builtin_name, payload, {**defaults, **(config or {})})
     http_config = definition.get("httpConfig")
     script_config = definition.get("scriptConfig")
     if http_config:

@@ -13,10 +13,12 @@ COPY agentforge-module-conversation/pom.xml agentforge-module-conversation/
 COPY agentforge-module-file/pom.xml agentforge-module-file/
 COPY agentforge-module-ai-gateway/pom.xml agentforge-module-ai-gateway/
 COPY agentforge-start/pom.xml agentforge-start/
-RUN mvn -q -B dependency:go-offline || true
+RUN mvn -q -B -Dmaven.wagon.http.retryHandler.count=5 -Dmaven.wagon.http.connectionTimeout=60000 \
+    dependency:go-offline || true
 
 COPY . .
-RUN mvn -q -B -pl agentforge-start -am package -DskipTests
+RUN mvn -q -B -pl agentforge-start -am -Dmaven.wagon.http.retryHandler.count=5 \
+    -Dmaven.wagon.http.connectionTimeout=60000 package -DskipTests
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app

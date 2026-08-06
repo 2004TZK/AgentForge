@@ -373,11 +373,20 @@ public class ConversationServiceImpl implements ConversationService {
                     customTool.put("description", definition.getDescription() == null
                             ? "" : definition.getDescription());
                     customTool.put("parameters", definition.getParameters());
-                    if (definition.getHttpConfig() != null) {
+                    if ("builtin".equals(definition.getToolType())
+                            && definition.getBuiltinName() != null) {
+                        // 内置工具副本：携带内置引用 + 默认配置（密钥解密），执行仍走内置实现
+                        customTool.put("builtinName", definition.getBuiltinName());
+                        Map<String, Object> sc = definition.getScriptConfig();
+                        if (sc != null && sc.get("defaults") instanceof Map<?, ?> defaults) {
+                            customTool.put("defaults",
+                                    ToolSecretUtil.decryptSecrets(
+                                            (Map<String, Object>) defaults, aesGcmCrypto));
+                        }
+                    } else if (definition.getHttpConfig() != null) {
                         customTool.put("httpConfig",
                                 ToolSecretUtil.decryptSecrets(definition.getHttpConfig(), aesGcmCrypto));
-                    }
-                    if (definition.getScriptConfig() != null) {
+                    } else if (definition.getScriptConfig() != null) {
                         customTool.put("scriptConfig", definition.getScriptConfig());
                     }
                     customTools.add(customTool);

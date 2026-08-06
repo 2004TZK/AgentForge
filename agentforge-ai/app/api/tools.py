@@ -18,7 +18,9 @@ router = APIRouter(prefix="/agent", tags=["tools"], dependencies=[Depends(requir
 
 class ToolTestRequest(BaseModel):
     """自定义工具测试入参（定义 + 示例参数）。"""
-    toolType: str = Field(description="http / script")
+    toolType: str = Field(description="http / script / builtin")
+    toolName: str | None = Field(default=None, description="内置工具名（toolType=builtin）")
+    toolConfig: dict | None = Field(default=None, description="内置工具配置（toolType=builtin）")
     httpConfig: dict | None = None
     scriptConfig: dict | None = None
     parameters: dict | None = None
@@ -54,8 +56,12 @@ def tools_test(request: ToolTestRequest) -> ToolTestResponse:
         elif request.toolType == "script":
             result = script_tool.execute(request.scriptConfig or {}, request.args or {})
             stdout = ""
+        elif request.toolType == "builtin":
+            result = tool_registry.call_tool(
+                request.toolName or "", request.args or {}, request.toolConfig or {})
+            stdout = ""
         else:
-            raise ValueError(f"toolType 仅支持 http / script: {request.toolType}")
+            raise ValueError(f"toolType 仅支持 http / script / builtin: {request.toolType}")
     except Exception as exc:  # noqa: BLE001 - 测试失败转可读错误，非系统异常
         return ToolTestResponse(ok=False, error=str(exc),
                                 durationMs=int((time.monotonic() - start) * 1000))

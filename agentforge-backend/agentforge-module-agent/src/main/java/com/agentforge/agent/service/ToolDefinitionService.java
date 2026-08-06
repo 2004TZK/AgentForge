@@ -32,6 +32,9 @@ public interface ToolDefinitionService {
     /** 复制 PUBLIC 工具到本人工具库（名称自动去冲突） */
     ToolDefinitionVO copy(Long id, Long operatorId);
 
+    /** 复制系统内置工具为本人可编辑副本（tool_type=builtin，引用内置实现） */
+    ToolDefinitionVO copyBuiltin(String builtinName, Long operatorId);
+
     /** 测试：校验权限后透传 AI 服务真实执行一次 */
     ToolTestResult test(ToolTestRequest request, Long operatorId);
 

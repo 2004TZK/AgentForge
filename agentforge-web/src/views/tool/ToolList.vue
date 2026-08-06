@@ -4,7 +4,12 @@ import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppLayout from '../../components/layout/AppLayout.vue'
 import { apiToolsMeta } from '../../api/agent'
-import { apiCopyToolDefinition, apiDeleteToolDefinition, apiToolDefinitionPage } from '../../api/toolDefinition'
+import {
+  apiCopyBuiltinToolDefinition,
+  apiCopyToolDefinition,
+  apiDeleteToolDefinition,
+  apiToolDefinitionPage,
+} from '../../api/toolDefinition'
 import { notifyError, notifySuccess } from '../../utils/notify'
 import type { ToolMeta } from '../../types/agent'
 import type { ToolDefinition } from '../../types/toolDefinition'
@@ -43,6 +48,21 @@ async function loadBuiltin(): Promise<void> {
 
 function toggleBuiltin(name: string): void {
   expandedBuiltin.value = expandedBuiltin.value === name ? null : name
+}
+
+/** 复制内置工具为本人可编辑副本，可选直接进入编辑页 */
+async function onCopyBuiltin(name: string, openEditor: boolean): Promise<void> {
+  try {
+    const copy = await apiCopyBuiltinToolDefinition(name)
+    notifySuccess(`已复制为「${copy.displayName}」`)
+    if (openEditor) {
+      router.push(`/tools/${copy.id}/edit`)
+    } else {
+      load()
+    }
+  } catch (e) {
+    notifyError((e as Error).message)
+  }
 }
 
 function goCreate(): void {
@@ -132,6 +152,8 @@ onMounted(() => {
               <td class="mono">{{ Object.keys(tool.parameters ?? {}).length }}</td>
               <td class="mono">{{ Object.keys(tool.config ?? {}).length }}</td>
               <td class="col-actions">
+                <button class="btn btn-secondary btn-sm" @click="onCopyBuiltin(tool.name, true)">编辑</button>
+                <button class="btn btn-secondary btn-sm" @click="onCopyBuiltin(tool.name, false)">复制</button>
                 <button class="btn btn-secondary btn-sm" @click="toggleBuiltin(tool.name)">
                   {{ expandedBuiltin === tool.name ? '收起' : '查看填写信息' }}
                 </button>

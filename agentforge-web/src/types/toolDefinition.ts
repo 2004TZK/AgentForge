@@ -22,6 +22,11 @@ export interface ScriptConfig {
   entrypoint?: string
 }
 
+/** 内置工具副本定义（执行走系统内置实现，仅配置默认值） */
+export interface BuiltinConfig {
+  defaults: Record<string, unknown>
+}
+
 /** 工具定义（列表/详情） */
 export interface ToolDefinition {
   id: number
@@ -29,12 +34,14 @@ export interface ToolDefinition {
   name: string
   displayName: string
   description: string | null
-  toolType: 'http' | 'script'
+  toolType: 'http' | 'script' | 'builtin'
+  /** 内置工具引用（toolType=builtin 时） */
+  builtinName?: string | null
   /** OpenAI function parameters：{type: 'object', properties, required?} */
   parameters: Record<string, unknown>
   /** 密钥字段已脱敏为 ******** */
   httpConfig: HttpConfig | null
-  scriptConfig: ScriptConfig | null
+  scriptConfig: ScriptConfig | BuiltinConfig | null
   visibility: 'PRIVATE' | 'PUBLIC'
   createdTime: string
   updatedTime: string
@@ -45,18 +52,21 @@ export interface ToolDefinitionPayload {
   name: string
   displayName: string
   description?: string
-  toolType: 'http' | 'script'
+  toolType: 'http' | 'script' | 'builtin'
+  builtinName?: string | null
   parameters: Record<string, unknown>
   httpConfig?: HttpConfig | null
-  scriptConfig?: ScriptConfig | null
+  scriptConfig?: ScriptConfig | BuiltinConfig | null
   visibility: 'PRIVATE' | 'PUBLIC'
 }
 
 /** 测试入参 */
 export interface ToolTestPayload {
-  toolType: 'http' | 'script'
+  toolType: 'http' | 'script' | 'builtin'
+  toolName?: string
+  toolConfig?: Record<string, unknown>
   httpConfig?: HttpConfig | null
-  scriptConfig?: ScriptConfig | null
+  scriptConfig?: ScriptConfig | BuiltinConfig | null
   parameters?: Record<string, unknown>
   args: Record<string, unknown>
 }

@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -85,10 +86,11 @@ public class ToolDefinitionServiceImpl implements ToolDefinitionService {
         entity.setDisplayName(request.getDisplayName().trim());
         entity.setDescription(request.getDescription());
         entity.setToolType(request.getToolType());
+        entity.setBuiltinName("builtin".equals(request.getToolType()) ? request.getBuiltinName() : null);
         entity.setParameters(request.getParameters() == null ? new HashMap<>() : request.getParameters());
         // 密钥字段加密后入库
         entity.setHttpConfig(ToolSecretUtil.encryptSecrets(request.getHttpConfig(), aesGcmCrypto));
-        entity.setScriptConfig(request.getScriptConfig());
+        entity.setScriptConfig(normalizeScriptConfig(request, null));
         entity.setVisibility(normalizeVisibility(request.getVisibility()));
         toolDefinitionMapper.insert(entity);
         log.info("创建自定义工具: id={}, name={}, type={}, creatorId={}",
@@ -110,12 +112,13 @@ public class ToolDefinitionServiceImpl implements ToolDefinitionService {
         entity.setDisplayName(request.getDisplayName().trim());
         entity.setDescription(request.getDescription());
         entity.setToolType(request.getToolType());
+        entity.setBuiltinName("builtin".equals(request.getToolType()) ? request.getBuiltinName() : null);
         entity.setParameters(request.getParameters() == null ? new HashMap<>() : request.getParameters());
         // 掩码合并：回显的 ******** 视为"不修改"，保留库中原值（可能为密文）
         Map<String, Object> mergedHttp = ToolSecretUtil.mergeSecrets(
                 existing.getHttpConfig(), request.getHttpConfig(), aesGcmCrypto);
         entity.setHttpConfig(ToolSecretUtil.encryptSecrets(mergedHttp, aesGcmCrypto));
-        entity.setScriptConfig(request.getScriptConfig());
+        entity.setScriptConfig(normalizeScriptConfig(request, existing.getScriptConfig()));
         entity.setVisibility(normalizeVisibility(request.getVisibility()));
         toolDefinitionMapper.updateById(entity);
         log.info("更新自定义工具: id={}, operatorId={}", id, operatorId);
@@ -152,6 +155,33 @@ public class ToolDefinitionServiceImpl implements ToolDefinitionService {
         return toVO(copy);
     }
 
+    @Override
+    @Transactional
+    public ToolDefinitionVO copyBuiltin(String builtinName, Long operatorId) {
+        Map<String, Object> meta = findBuiltinMeta(builtinName);
+        if (meta == null) {
+            throw new BusinessException(ResultCode.RESOURCE_NOT_FOUND,
+                    "内置工具不存在: " + builtinName);
+        }
+        String newName = uniqueBuiltinCopyName(builtinName, operatorId);
+        ToolDefinition entity = new ToolDefinition();
+        entity.setCreatorId(operatorId);
+        entity.setName(newName);
+        entity.setDisplayName(String.valueOf(meta.getOrDefault("name", builtinName)) + "（副本）");
+        entity.setDescription(meta.get("description") == null ? null : String.valueOf(meta.get("description")));
+        entity.setToolType("builtin");
+        entity.setBuiltinName(builtinName);
+        entity.setParameters(convertFlatParameters(meta.get("parameters")));
+        Map<String, Object> scriptConfig = new HashMap<>();
+        scriptConfig.put("defaults", new HashMap<String, Object>());
+        entity.setScriptConfig(scriptConfig);
+        entity.setVisibility("PRIVATE");
+        toolDefinitionMapper.insert(entity);
+        log.info("复制内置工具为副本: builtin={}, newId={}, operatorId={}",
+                builtinName, entity.getId(), operatorId);
+        return toVO(entity);
+    }
+
     // ---------------- 测试 / 绑定 ----------------
 
     @Override
@@ -161,6 +191,8 @@ public class ToolDefinitionServiceImpl implements ToolDefinitionService {
         }
         AiToolTestRequest aiRequest = AiToolTestRequest.builder()
                 .toolType(request.getToolType())
+                .toolName(request.getToolName())
+                .toolConfig(request.getToolConfig())
                 // 测试入口来自工具库页面：httpConfig 为前端回显（已脱敏），密钥字段无需解密
                 // （由用户临时填入或回填掩码；掩码值在 AI 侧按字面发送 —— 测试场景可接受，
                 // 如需真实密钥测试请在表单中重新输入）
@@ -258,6 +290,15 @@ public class ToolDefinitionServiceImpl implements ToolDefinitionService {
             if (String.valueOf(source).length() > SCRIPT_MAX_CHARS) {
                 throw new BusinessException(ResultCode.PARAM_ERROR, "代码大小超过 50KB 上限");
             }
+        } else if ("builtin".equals(request.getToolType())) {
+            if (!StringUtils.hasText(request.getBuiltinName())) {
+                throw new BusinessException(ResultCode.PARAM_ERROR,
+                        "内置工具副本必须指定 builtinName");
+            }
+            if (!builtinNames().contains(request.getBuiltinName())) {
+                throw new BusinessException(ResultCode.PARAM_ERROR,
+                        "内置工具不存在: " + request.getBuiltinName());
+            }
         } else {
             throw new BusinessException(ResultCode.PARAM_ERROR, "toolType 仅支持 http / script");
         }
@@ -274,6 +315,101 @@ public class ToolDefinitionServiceImpl implements ToolDefinitionService {
             throw new BusinessException(ResultCode.RESOURCE_NOT_FOUND, "工具定义不存在");
         }
         return definition;
+    }
+
+    /** 内置工具名集合（元数据获取失败时返回空集合并告警，不阻断主链路） */
+    private Set<String> builtinNames() {
+        Set<String> names = new HashSet<>();
+        try {
+            List<Map<String, Object>> meta = aiServiceClient.getToolMeta();
+            if (meta != null) {
+                for (Map<String, Object> m : meta) {
+                    if (m.get("name") != null) {
+                        names.add(String.valueOf(m.get("name")));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("内置工具元数据获取失败，跳过 builtin 校验: {}", e.getMessage());
+        }
+        return names;
+    }
+
+    /** 按名查找内置工具元数据 */
+    private Map<String, Object> findBuiltinMeta(String builtinName) {
+        try {
+            List<Map<String, Object>> meta = aiServiceClient.getToolMeta();
+            if (meta != null) {
+                for (Map<String, Object> m : meta) {
+                    if (builtinName.equals(String.valueOf(m.get("name")))) {
+                        return m;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("内置工具元数据获取失败: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * 内置工具副本的 scriptConfig 规范化：{"defaults": {…}}，默认配置密钥加密入库。
+     * 更新时掩码回显与库中原密文合并（编辑留空/掩码表示不修改）。
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> normalizeScriptConfig(ToolDefinitionRequest request,
+                                                      Map<String, Object> oldScriptConfig) {
+        if (!"builtin".equals(request.getToolType())) {
+            return request.getScriptConfig();
+        }
+        Map<String, Object> incoming = request.getScriptConfig() == null
+                ? new HashMap<>() : request.getScriptConfig();
+        Object defaultsObj = incoming.get("defaults");
+        Map<String, Object> defaults = defaultsObj instanceof Map<?, ?>
+                ? (Map<String, Object>) defaultsObj : new HashMap<>();
+        Map<String, Object> merged = defaults;
+        if (oldScriptConfig != null && oldScriptConfig.get("defaults") instanceof Map<?, ?> oldDefaults) {
+            merged = ToolSecretUtil.mergeSecrets(
+                    (Map<String, Object>) oldDefaults, defaults, aesGcmCrypto);
+        }
+        Map<String, Object> result = new HashMap<>();
+        result.put("defaults", ToolSecretUtil.encryptSecrets(merged, aesGcmCrypto));
+        return result;
+    }
+
+    /** 内置工具扁平参数描述 → OpenAI function parameters 结构 */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> convertFlatParameters(Object parametersObj) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("type", "object");
+        Map<String, Object> properties = new HashMap<>();
+        List<String> required = new ArrayList<>();
+        if (parametersObj instanceof Map<?, ?> params) {
+            for (Map.Entry<?, ?> e : params.entrySet()) {
+                String param = String.valueOf(e.getKey());
+                if (e.getValue() instanceof Map<?, ?> spec) {
+                    Map<String, Object> prop = new HashMap<>();
+                    for (Map.Entry<?, ?> se : spec.entrySet()) {
+                        String k = String.valueOf(se.getKey());
+                        if ("required".equals(k)) {
+                            if (Boolean.TRUE.equals(se.getValue())) {
+                                required.add(param);
+                            }
+                        } else {
+                            prop.put(k, se.getValue());
+                        }
+                    }
+                    properties.put(param, prop);
+                } else {
+                    properties.put(param, Map.of("type", "string"));
+                }
+            }
+        }
+        result.put("properties", properties);
+        if (!required.isEmpty()) {
+            result.put("required", required);
+        }
+        return result;
     }
 
     private void checkOwner(ToolDefinition definition, Long operatorId) {
@@ -314,8 +450,31 @@ public class ToolDefinitionServiceImpl implements ToolDefinitionService {
         }
     }
 
+    /** 内置工具副本名称：强制 _copy 后缀（避免与内置工具同名），再按用户级去冲突 */
+    private String uniqueBuiltinCopyName(String baseName, Long ownerId) {
+        String candidate = baseName + COPY_SUFFIX;
+        int i = 2;
+        while (true) {
+            Long count = toolDefinitionMapper.selectCount(new LambdaQueryWrapper<ToolDefinition>()
+                    .eq(ToolDefinition::getCreatorId, ownerId)
+                    .eq(ToolDefinition::getName, candidate));
+            if (count == null || count == 0) {
+                return candidate;
+            }
+            candidate = baseName + COPY_SUFFIX + "_" + i;
+            i++;
+        }
+    }
+
     /** 出参：http_config 密钥脱敏 */
     private ToolDefinitionVO toVO(ToolDefinition definition) {
+        Map<String, Object> scriptConfig = definition.getScriptConfig();
+        if ("builtin".equals(definition.getToolType()) && scriptConfig != null
+                && scriptConfig.get("defaults") instanceof Map<?, ?> defaults) {
+            scriptConfig = new HashMap<>(scriptConfig);
+            scriptConfig.put("defaults",
+                    ToolSecretUtil.maskSecrets((Map<String, Object>) defaults));
+        }
         return ToolDefinitionVO.builder()
                 .id(definition.getId())
                 .creatorId(definition.getCreatorId())
@@ -323,9 +482,10 @@ public class ToolDefinitionServiceImpl implements ToolDefinitionService {
                 .displayName(definition.getDisplayName())
                 .description(definition.getDescription())
                 .toolType(definition.getToolType())
+                .builtinName(definition.getBuiltinName())
                 .parameters(definition.getParameters())
                 .httpConfig(ToolSecretUtil.maskSecrets(definition.getHttpConfig()))
-                .scriptConfig(definition.getScriptConfig())
+                .scriptConfig(scriptConfig)
                 .visibility(definition.getVisibility())
                 .createdTime(definition.getCreatedTime())
                 .updatedTime(definition.getUpdatedTime())

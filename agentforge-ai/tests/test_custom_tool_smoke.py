@@ -85,6 +85,30 @@ def test_custom_tool_request_scoped():
     assert callable(handler)
 
 
+def test_builtin_copy_handler_routes_to_registry():
+    """内置工具副本：schema 按副本名生成，执行路由到内置实现并合并默认配置。"""
+    definition = {
+        "name": "calculator_copy",
+        "description": "计算器副本",
+        "parameters": {"type": "object", "properties": {"expression": {"type": "string"}}},
+        "builtinName": "calculator",
+        "defaults": {"precision": 2},
+    }
+    tools = registry.openai_tools(["calculator_copy"], [definition])
+    assert any(t["function"]["name"] == "calculator_copy" for t in tools)
+    handler = registry.build_custom_handler(definition)
+    assert handler({"expression": "1+2"}, {}) == "3"
+
+
+def test_tools_test_builtin():
+    """测试接口支持内置工具（toolType=builtin）：真实执行内置实现。"""
+    from app.api.tools import ToolTestRequest, tools_test
+
+    resp = tools_test(ToolTestRequest(
+        toolType="builtin", toolName="calculator", args={"expression": "2+3"}))
+    assert resp.ok and resp.result == "5"
+
+
 def test_script_sandbox_down():
     old = settings.sandbox_base_url
     settings.sandbox_base_url = "http://127.0.0.1:1"

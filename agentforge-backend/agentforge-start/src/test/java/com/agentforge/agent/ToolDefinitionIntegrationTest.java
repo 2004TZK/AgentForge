@@ -44,8 +44,12 @@ class ToolDefinitionIntegrationTest extends IntegrationTestBase {
     /** 内置工具元数据（Mock：registry 返回 calculator/github 等） */
     private void mockToolMeta() {
         when(aiServiceClient.getToolMeta()).thenReturn(List.of(
-                Map.of("name", "calculator", "description", "计算器"),
-                Map.of("name", "github", "description", "GitHub 查询")));
+                Map.of("name", "calculator", "description", "计算器",
+                        "parameters", Map.of("expression",
+                                Map.of("type", "string", "description", "表达式", "required", true))),
+                Map.of("name", "github", "description", "GitHub 查询",
+                        "parameters", Map.of("repo",
+                                Map.of("type", "string", "description", "仓库路径", "required", true)))));
     }
 
     private void mockTestTool() {
@@ -325,6 +329,91 @@ class ToolDefinitionIntegrationTest extends IntegrationTestBase {
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(10003));
+    }
+
+    @Test
+    @DisplayName("复制内置工具为可编辑副本：builtin 类型 + 引用 + 参数 Schema 转换")
+    void copyBuiltinTool() throws Exception {
+        mockToolMeta();
+        String token = registerAndLogin("alice");
+        mockMvc.perform(post("/tool-definitions/from-builtin/calculator")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.toolType").value("builtin"))
+                .andExpect(jsonPath("$.data.builtinName").value("calculator"))
+                .andExpect(jsonPath("$.data.name").value("calculator_copy"))
+                .andExpect(jsonPath("$.data.parameters.properties.expression").exists());
+
+        // 不存在的内置工具 → 10003
+        mockMvc.perform(post("/tool-definitions/from-builtin/not_exist_tool")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(10003));
+    }
+
+    @Test
+    @DisplayName("内置工具副本：默认配置密钥加密入库、详情脱敏、掩码回传不覆盖")
+    void builtinCopyDefaultsEncrypted() throws Exception {
+        mockToolMeta();
+        String token = registerAndLogin("alice");
+        MvcResult created = mockMvc.perform(post("/tool-definitions")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "github_plus",
+                                  "displayName": "GitHub 增强",
+                                  "toolType": "builtin",
+                                  "builtinName": "github",
+                                  "parameters": {"type":"object","properties":{"repo":{"type":"string"}},"required":["repo"]},
+                                  "scriptConfig": {"defaults": {"api_key": "sk-secret-123"}},
+                                  "visibility": "PRIVATE"
+                                }"""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.toolType").value("builtin"))
+                .andExpect(jsonPath("$.data.scriptConfig.defaults.api_key").value("********"))
+                .andReturn();
+        long id = extractId(created);
+
+        String stored = jdbcTemplate.queryForObject(
+                "SELECT script_config FROM tool_definition WHERE id = ?", String.class, id);
+        assert stored != null && stored.contains("enc:v1:") && !stored.contains("sk-secret-123")
+                : "内置副本默认配置密钥必须加密: " + stored;
+
+        // 掩码回传（编辑留空）→ 保留库中原密文
+        mockMvc.perform(put("/tool-definitions/{id}", id)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "github_plus",
+                                  "displayName": "GitHub 增强 2",
+                                  "toolType": "builtin",
+                                  "builtinName": "github",
+                                  "parameters": {"type":"object","properties":{"repo":{"type":"string"}},"required":["repo"]},
+                                  "scriptConfig": {"defaults": {"api_key": "********"}},
+                                  "visibility": "PRIVATE"
+                                }"""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.scriptConfig.defaults.api_key").value("********"));
+
+        String after = jdbcTemplate.queryForObject(
+                "SELECT script_config FROM tool_definition WHERE id = ?", String.class, id);
+        assert after != null && after.contains("enc:v1:") && !after.contains("********")
+                && !after.contains("sk-secret-123") : "掩码回传不得覆盖密文: " + after;
+
+        // 内置工具名非法 → 10001
+        mockMvc.perform(post("/tool-definitions")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"bad_builtin","displayName":"x","toolType":"builtin",
+                                 "builtinName":"not_exist_tool","parameters":{},"scriptConfig":{"defaults":{}}}"""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(10001));
     }
 
     // ---------------- 辅助 ----------------
