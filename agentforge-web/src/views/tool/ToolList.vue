@@ -52,6 +52,12 @@ function toggleBuiltin(name: string): void {
 
 /** 复制内置工具为本人可编辑副本，可选直接进入编辑页 */
 async function onCopyBuiltin(name: string, openEditor: boolean): Promise<void> {
+  if (openEditor) {
+    const ok = window.confirm(
+      `内置工具「${name}」为系统共享，无法直接修改。\n将复制一份到你的工具库并打开编辑（执行逻辑沿用内置实现，可改描述/参数/默认配置），是否继续？`,
+    )
+    if (!ok) return
+  }
   try {
     const copy = await apiCopyBuiltinToolDefinition(name)
     notifySuccess(`已复制为「${copy.displayName}」`)
@@ -132,7 +138,9 @@ onMounted(() => {
       <div class="card">
         <div class="section-title">
           <span class="section-key">BUILT-IN</span>系统内置工具
-          <span class="muted">— 在「编辑智能体」页绑定后即可被 LLM 调用，此处可查看各工具的填写信息</span>
+          <span class="muted">
+            — 在「编辑智能体」页绑定后即可被 LLM 调用；「复制并编辑」会复制一份到你的工具库后可修改
+          </span>
         </div>
         <div v-if="!builtinTools.length" class="muted">内置工具元数据加载中…</div>
         <table v-else class="table">
@@ -152,7 +160,7 @@ onMounted(() => {
               <td class="mono">{{ Object.keys(tool.parameters ?? {}).length }}</td>
               <td class="mono">{{ Object.keys(tool.config ?? {}).length }}</td>
               <td class="col-actions">
-                <button class="btn btn-secondary btn-sm" @click="onCopyBuiltin(tool.name, true)">编辑</button>
+                <button class="btn btn-secondary btn-sm" @click="onCopyBuiltin(tool.name, true)">复制并编辑</button>
                 <button class="btn btn-secondary btn-sm" @click="onCopyBuiltin(tool.name, false)">复制</button>
                 <button class="btn btn-secondary btn-sm" @click="toggleBuiltin(tool.name)">
                   {{ expandedBuiltin === tool.name ? '收起' : '查看填写信息' }}
