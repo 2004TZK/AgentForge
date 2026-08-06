@@ -1,13 +1,24 @@
 /** 智能体相关类型 */
 
 /** 工具配置项 Schema（M3：后端透传 AI 服务 /tools/meta，前端按此渲染配置表单） */
+/** 工具配置项字段规格（含可选元信息：必填/默认值/占位/密钥/枚举） */
+export interface ToolConfigSpec {
+  type: string
+  description?: string
+  required?: boolean
+  default?: unknown
+  placeholder?: string
+  secret?: boolean
+  options?: unknown[]
+}
+
 export interface ToolMeta {
   name: string
   description: string
   /** LLM 工具调用参数 {参数名: {type, description, required?}} */
   parameters: Record<string, { type: string; description?: string; required?: boolean }>
-  /** 智能体级配置参数 {参数名: {type, description}}（存 tool_config） */
-  config: Record<string, { type: string; description?: string }>
+  /** 智能体级配置参数 {参数名: 规格}（存 tool_config，在编辑智能体页填写） */
+  config: Record<string, ToolConfigSpec>
 }
 
 export interface AgentTool {
