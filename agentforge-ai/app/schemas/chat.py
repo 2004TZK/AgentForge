@@ -28,10 +28,18 @@ class ChatRequest(BaseModel):
 
 
 class SourceItem(BaseModel):
-    """回答引用的知识库来源（M2 起为对象，含可查看的片段）。"""
+    """回答引用的知识库来源（M2 起为对象，含可查看的片段）。
+
+    数据库类文件（sqlite/csv）携带结构化定位：table / rowStart / rowEnd /
+    sourceType，供聊天引用展示「文件 + 表名 + 行号区间」。
+    """
     file: str
     snippet: str = Field(description="引用片段（截断）")
     score: float = 0.0
+    table: Optional[str] = None
+    rowStart: Optional[int] = None
+    rowEnd: Optional[int] = None
+    sourceType: Optional[str] = None
 
 
 class ChatResponse(BaseModel):

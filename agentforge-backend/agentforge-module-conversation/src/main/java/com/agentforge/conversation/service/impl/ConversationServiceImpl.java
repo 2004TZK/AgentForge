@@ -420,7 +420,7 @@ public class ConversationServiceImpl implements ConversationService {
         outputStream.flush();
     }
 
-    /** 解析 done 事件中的 sources 数组（[{file, snippet, score}]） */
+    /** 解析 done 事件中的 sources 数组（[{file, snippet, score, table?, rowStart?, rowEnd?, sourceType?}]） */
     private List<AiSourceItem> parseSources(JsonNode sourcesNode) {
         List<AiSourceItem> sources = new ArrayList<>();
         if (sourcesNode == null || !sourcesNode.isArray()) {
@@ -431,6 +431,13 @@ public class ConversationServiceImpl implements ConversationService {
             source.setFile(item.path("file").asText(""));
             source.setSnippet(item.path("snippet").asText(""));
             source.setScore(item.path("score").asDouble(0.0));
+            // 数据库文件结构化来源：表名 + 行号区间（聊天引用展示「文件 + 表名 + 行号」）
+            source.setTable(item.path("table").asText(""));
+            source.setRowStart(item.path("rowStart").isIntegralNumber()
+                    ? item.path("rowStart").asInt() : null);
+            source.setRowEnd(item.path("rowEnd").isIntegralNumber()
+                    ? item.path("rowEnd").asInt() : null);
+            source.setSourceType(item.path("sourceType").asText(""));
             sources.add(source);
         });
         return sources;

@@ -214,7 +214,11 @@ onMounted(async () => {
                   class="source-chip"
                   @click="toggleSource(`${index}-${srcIndex}`)"
                 >
-                  {{ src.file }}
+                  {{ src.file }}<template v-if="src.table || src.rowStart">
+                    <span class="source-loc">
+                      · {{ src.table || '(csv)' }}{{ src.rowStart ? ` · 第 ${src.rowStart}–${src.rowEnd ?? src.rowStart} 行` : '' }}
+                    </span>
+                  </template>
                 </button>
                 <div
                   v-if="expandedSources.has(`${index}-${srcIndex}`)"
@@ -502,6 +506,11 @@ onMounted(async () => {
 
 .source-chip:hover {
   background: var(--forge-tint);
+}
+
+.source-loc {
+  opacity: 0.7;
+  font-size: 11px;
 }
 
 .source-snippet {

@@ -43,6 +43,16 @@ class Settings(BaseSettings):
     chunk_size_tokens: int = 500
     chunk_overlap_tokens: int = 50
 
+    # ---- 数据库文件解析（第一期：SQLite + CSV，设计 v0.2 §7/§10） ----
+    db_chunk_rows: int = 50            # 结构化切片：每 chunk 合并的行数
+    db_batch_rows: int = 1000          # 游标分批读取行数（大表防内存峰值）
+    csv_fallback_encoding: str = "gb18030"  # CSV UTF-8 失败后的兜底编码（兼容中文 Excel 导出）
+    db_max_rows: int = 100_000         # 单文件总行数上限，超出直接拒绝
+    db_max_tables: int = 100           # 单文件表数上限，超出直接拒绝
+    # ---- 手动切片参数上限（slicingConfig 校验，防恶意超参） ----
+    manual_max_chunk_rows: int = 500   # 手动模式每 chunk 行数上限
+    manual_max_chunk_tokens: int = 2000  # 手动模式 chunk token 上限
+
     # ---- 共享文件卷 ----
     upload_dir: str = "/data/uploads"
 

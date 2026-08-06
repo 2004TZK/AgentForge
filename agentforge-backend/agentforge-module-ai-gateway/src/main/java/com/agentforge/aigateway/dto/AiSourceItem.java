@@ -16,4 +16,16 @@ public class AiSourceItem {
 
     /** 相似度分数 */
     private double score;
+
+    /** 结构化来源：表名/sheet 名（sqlite/csv 文件） */
+    private String table;
+
+    /** 行号区间起点 */
+    private Integer rowStart;
+
+    /** 行号区间终点 */
+    private Integer rowEnd;
+
+    /** 来源类型：sqlite / csv / pdf / docx / txt / md */
+    private String sourceType;
 }

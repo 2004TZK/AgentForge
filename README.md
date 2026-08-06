@@ -20,7 +20,7 @@ AgentForge 是一个开源的 LLM Agent 构建平台：创建智能体（系统�
 |---|---|
 | 🤖 智能体 | 系统提示词 / 模型 / 温度 / **公开-私有可见性** / 工具按 Schema 配置（API Key 密码框） |
 | 🔧 工具调用 | LLM 依据 JSON Schema **自主决策**（OpenAI 兼容 tools 参数），LangGraph **ReAct 多轮循环**（上限 3 轮），SSE 实时展示工具活动；规则触发保留兜底 |
-| 📚 RAG 知识库 | 上传（pdf/docx/txt/md）→ 解析 → text-embedding-v3 Embedding → Qdrant 检索 → **来源引用**；文件管理（重试/删除/同名覆盖） |
+| 📚 RAG 知识库 | 上传（pdf/docx/txt/md/**db/sqlite/sqlite3/csv**）→ 解析 → text-embedding-v3 Embedding → Qdrant 检索 → **来源引用**（数据库文件展示「文件 + 表名 + 行号」）；自动/手动切片（结构化按表/行分块）、异步入库进度、文件管理（重试/删除/同名覆盖） |
 | 📜 Workflow v1 | JSON 线性流程（tool/llm 节点 + `{var}` 模板）→ LangGraph 编译执行 → **节点级日志**；Agent 对话模式/工作流模式 |
 | 💬 对话 | SSE 流式打字机（**断流自愈**）、多会话、Redis 短期记忆（**按用户隔离**，TTL 24h，自动降级）、历史分页 |
 | 🔮 星盘分析 | 瑞士星历排盘（pyswisseph，1800-2399、223 城市库、Tropical/Placidus 口径、高纬降级）、星盘分析师解读（逐星体详细展开、**3000 字硬上限**）、占星知识库 RAG、深度分析工作流、排盘卡片 + 黄道圈示意图 |

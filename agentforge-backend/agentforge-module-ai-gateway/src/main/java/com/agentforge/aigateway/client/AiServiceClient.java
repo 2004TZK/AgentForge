@@ -5,6 +5,7 @@ import com.agentforge.aigateway.dto.AiChatRequest;
 import com.agentforge.aigateway.dto.AiChatResponse;
 import com.agentforge.aigateway.dto.AiDeleteResponse;
 import com.agentforge.aigateway.dto.AiIngestResponse;
+import com.agentforge.aigateway.dto.AiPreviewResponse;
 import com.agentforge.aigateway.dto.AiWorkflowRunRequest;
 import com.agentforge.aigateway.dto.AiWorkflowRunResponse;
 import com.agentforge.common.core.ResultCode;
@@ -121,10 +122,37 @@ public class AiServiceClient {
 
     /** 文档入库：POST /rag/ingest（幂等，调用方可按需重试） */
     public AiIngestResponse ingest(Long agentId, String fileName, String filePath) {
+        return ingest(agentId, fileName, filePath, null, null, null, null);
+    }
+
+    /**
+     * 文档入库：POST /rag/ingest（幂等，调用方可按需重试）。
+     *
+     * @param slicingMode   切片方式 auto/manual（手动模式时 slicingConfig 生效）
+     * @param slicingConfig 手动切片参数 JSON 快照（可为 null）
+     * @param documentId    文档 ID（用于异步入库进度回写）
+     * @param progressUrl   入库进度回写地址（AI 服务分批回调后端内部接口）
+     */
+    public AiIngestResponse ingest(Long agentId, String fileName, String filePath,
+                                   String slicingMode, String slicingConfig,
+                                   Long documentId, String progressUrl) {
         Map<String, Object> body = new HashMap<>();
         body.put("agentId", agentId);
         body.put("fileName", fileName);
         body.put("filePath", filePath);
+        if (documentId != null) {
+            body.put("documentId", documentId);
+        }
+        if (StringUtils.hasText(slicingMode)) {
+            body.put("slicingMode", slicingMode);
+        }
+        Map<String, Object> config = parseJson(slicingConfig);
+        if (config != null) {
+            body.put("slicingConfig", config);
+        }
+        if (StringUtils.hasText(progressUrl)) {
+            body.put("progressUrl", progressUrl);
+        }
         try {
             return restClient.post()
                     .uri("/rag/ingest")
@@ -137,6 +165,47 @@ public class AiServiceClient {
                     .body(AiIngestResponse.class);
         } catch (ResourceAccessException e) {
             throw mapConnectError(e, "知识库处理超时");
+        }
+    }
+
+    /** 手动切片预览：POST /rag/preview（只读解析结构 + 样例 chunk，不入库） */
+    public AiPreviewResponse preview(String fileName, String filePath,
+                                     String slicingMode, String slicingConfig) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("fileName", fileName);
+        body.put("filePath", filePath);
+        if (StringUtils.hasText(slicingMode)) {
+            body.put("slicingMode", slicingMode);
+        }
+        Map<String, Object> config = parseJson(slicingConfig);
+        if (config != null) {
+            body.put("slicingConfig", config);
+        }
+        try {
+            return restClient.post()
+                    .uri("/rag/preview")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(body)
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError, (req, res) -> {
+                        throw mapAiError(res, ResultCode.RAG_ERROR);
+                    })
+                    .body(AiPreviewResponse.class);
+        } catch (ResourceAccessException e) {
+            throw mapConnectError(e, "知识库预览超时");
+        }
+    }
+
+    /** 解析手动切片参数 JSON（非法时抛可读业务异常，由调用方/全局处理器展示） */
+    public Map<String, Object> parseJson(String json) {
+        if (!StringUtils.hasText(json)) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(json,
+                    new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {});
+        } catch (IOException e) {
+            throw new BusinessException(ResultCode.PARAM_ERROR, "slicingConfig 不是合法的 JSON");
         }
     }
 
@@ -216,6 +285,10 @@ public class AiServiceClient {
                 };
             }
             String m = node.path("message").asText("");
+            if (!StringUtils.hasText(m)) {
+                // FastAPI HTTPException 响应体为 {"detail": "..."}，作为兜底错误详情
+                m = node.path("detail").asText("");
+            }
             if (StringUtils.hasText(m)) {
                 message = m;
             }
@@ -267,6 +340,7 @@ public class AiServiceClient {
         body.put("history", request.getHistory());
         body.put("systemPrompt", request.getSystemPrompt());
         body.put("modelName", request.getModelName());
+        body.put("provider", request.getProvider());
         body.put("temperature", request.getTemperature());
         body.put("tools", request.getTools());
         body.put("userId", request.getUserId());

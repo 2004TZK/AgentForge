@@ -90,16 +90,20 @@
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
-| POST | /file/upload?agentId | multipart 上传（pdf/docx/txt/md，≤20MB）→ DocumentVO；自动触发 RAG 入库 |
-| GET | /file/list?agentId&page&size | 文档分页 |
+| POST | /file/upload?agentId | multipart 上传（pdf/docx/txt/md/db/sqlite/sqlite3/csv，≤50MB 可配置）→ DocumentVO；自动触发 RAG 入库（异步）；可选参数 `slicingMode`(auto/manual) 与 `slicingConfig`(JSON) |
+| POST | /file/preview | 手动切片预览（仅数据库类文件）：只读解析结构 + 按参数生成样例 chunk，不入库 |
+| GET | /file/list?agentId&page&size | 文档分页（含 chunkCount/slicingMode/processedChunks/totalChunks） |
 | DELETE | /file/{id} | 删除（元数据 + 磁盘文件 + Qdrant 向量；向量删除失败则整体失败可重试） |
-| POST | /file/{id}/retry | 重试 RAG 入库（PENDING/FAILED） |
+| POST | /file/{id}/retry | 重试 RAG 入库（PENDING/FAILED，沿用原切片配置） |
 
 > M2 同名覆盖：同名文件重复上传会先清理旧文档（元数据 + 向量）再入库，避免旧分块残留。
 > 删除文档时 Qdrant 向量删除失败会返回 40004 并保留记录（保证集合一致，可重试删除）。
 > M4 权限：删除/重试仅文档所属 Agent 的创建者可操作（20003）；列表按 Agent 隔离。
+> 数据库文件自动切片（设计 v0.2）：SQLite 只读解析 + CSV（UTF-8/GB18030 编码探测），按「表/行」结构化切片，
+> chunk payload 携带 table/rowStart/rowEnd/sourceType 元数据；入库异步执行，AI 服务经内部接口
+> `POST /file/{id}/progress`（X-Internal-Token）分批回写 processedChunks/totalChunks，列表页展示进度。
 
-错误码：40001 类型不支持、40002 超 20MB、40003 空文件、40004 RAG 失败。
+错误码：40001 类型不支持、40002 超上限、40003 空文件、40004 RAG 失败、40005 文件内容与扩展名不符。
 
 ## 5. 工作流 /workflows（需登录，M3）
 
@@ -144,8 +148,9 @@
 | POST | /agent/chat/stream | 同请求体；SSE 流式（事件协议同第 3 节，done 事件携带完整 answer 供落库） |
 | GET | /agent/tools/meta | 工具元数据（名称/描述/参数/配置 Schema；后端 /tools/meta 透传） |
 | POST | /agent/workflow/run | `{definition: {nodes[]}, input}` → `{status, output, nodeLogs[], error}`（LangGraph 编译执行） |
-| POST | /rag/ingest | `{agentId, fileName, filePath}` → `{status, chunkCount}` |
-| POST | /rag/search | `{agentId, query, topK}` → `{chunks[]}` |
+| POST | /rag/ingest | `{agentId, fileName, filePath, slicingMode?, slicingConfig?, documentId?, progressUrl?}` → `{status, chunkCount}` |
+| POST | /rag/preview | `{fileName, filePath, slicingMode?, slicingConfig?}` → `{sourceType, totalRows, tableCount, tables[], sampleChunks[]}`（只读解析，不入库） |
+| POST | /rag/search | `{agentId, query, topK}` → `{chunks[]}`（含 table/rowStart/rowEnd/sourceType） |
 | DELETE | /rag/file?agentId&fileName | → `{deletedCount}` |
 
 > M3 记忆：`userId` 透传后 Redis 短期记忆按 `memory:agent:{agentId}:user:{userId}` 隔离

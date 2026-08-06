@@ -166,6 +166,8 @@ services:
       AGENTFORGE_AI_CONNECT_TIMEOUT_MS: ${AGENTFORGE_AI_CONNECT_TIMEOUT_MS:-5000}
       AGENTFORGE_AI_READ_TIMEOUT_MS: ${AGENTFORGE_AI_READ_TIMEOUT_MS:-600000}
       AGENTFORGE_UPLOAD_DIR: /data/uploads
+      # AI 服务入库进度回调后端内部接口（容器网络内地址）
+      AGENTFORGE_UPLOAD_PROGRESS_BASE_URL: http://backend:8080/api
     volumes:
       - agentforge-uploads:/data/uploads
     depends_on:

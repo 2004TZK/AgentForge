@@ -26,6 +26,17 @@ const STATUS_TEXT: Record<DocumentItem['status'], string> = {
   FAILED: '处理失败',
 }
 
+/** 切片方式展示 */
+function slicingModeText(mode?: string): string {
+  return mode === 'manual' ? '手动切片' : '自动切片'
+}
+
+/** 入库进度百分比（有 totalChunks 时展示） */
+function progressPercent(doc: DocumentItem): number | null {
+  if (!doc.totalChunks || doc.totalChunks <= 0) return null
+  return Math.min(100, Math.round(((doc.processedChunks ?? 0) / doc.totalChunks) * 100))
+}
+
 async function ensureAgents(): Promise<void> {
   if (!agents.value.length) {
     await agentStore.fetchList(1, 100)
@@ -125,7 +136,9 @@ onUnmounted(() => {
             <tr>
               <th>文件名</th>
               <th>类型</th>
-              <th>状态</th>
+              <th>切片方式</th>
+              <th>切片数</th>
+              <th>状态 / 进度</th>
               <th>上传时间</th>
               <th style="width: 160px">操作</th>
             </tr>
@@ -134,9 +147,22 @@ onUnmounted(() => {
             <tr v-for="doc in documents" :key="doc.id">
               <td>{{ doc.fileName }}</td>
               <td class="muted mono">{{ doc.fileType }}</td>
+              <td class="muted">{{ slicingModeText(doc.slicingMode) }}</td>
+              <td class="muted">
+                <template v-if="doc.chunkCount !== undefined && doc.chunkCount !== null">
+                  {{ doc.chunkCount }}
+                </template>
+                <template v-else>—</template>
+              </td>
               <td>
                 <span class="badge" :class="`badge-${doc.status.toLowerCase()}`">
                   {{ STATUS_TEXT[doc.status] }}
+                </span>
+                <span
+                  v-if="progressPercent(doc) !== null"
+                  class="muted progress-text"
+                >
+                  {{ progressPercent(doc) }}%
                 </span>
               </td>
               <td class="muted">{{ new Date(doc.createdTime).toLocaleString() }}</td>
@@ -152,7 +178,7 @@ onUnmounted(() => {
               </td>
             </tr>
             <tr v-if="!loading && documents.length === 0">
-              <td colspan="5" class="muted" style="text-align: center; padding: 32px">
+              <td colspan="7" class="muted" style="text-align: center; padding: 32px">
                 暂无文档，点击右上角「上传文档」入库知识库
               </td>
             </tr>
@@ -192,5 +218,10 @@ onUnmounted(() => {
 
 td .btn {
   margin-right: 6px;
+}
+
+.progress-text {
+  margin-left: 6px;
+  font-size: 12px;
 }
 </style>

@@ -25,5 +25,20 @@ public class DocumentVO {
     /** 状态：PENDING/PROCESSING/READY/FAILED */
     private String status;
 
+    /** 切片数 */
+    private Integer chunkCount;
+
+    /** 切片方式：auto/manual */
+    private String slicingMode;
+
+    /** 已入库 chunk 数（进度） */
+    private Integer processedChunks;
+
+    /** 总 chunk 数（进度） */
+    private Integer totalChunks;
+
+    /** 手动切片参数快照（手动模式回显） */
+    private String slicingConfig;
+
     private LocalDateTime createdTime;
 }

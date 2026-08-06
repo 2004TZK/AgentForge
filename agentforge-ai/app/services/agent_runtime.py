@@ -184,7 +184,9 @@ def prepare_chat(*, agent_id: int, message: str, history: list[dict] | None = No
         if chunks:
             knowledge = "\n\n".join(f"[{c['file']}] {c['content']}" for c in chunks)
             context_notes.append(f"知识库检索结果:\n{knowledge}")
-            sources = [{"file": c["file"], "snippet": c["content"][:200], "score": c["score"]}
+            sources = [{"file": c["file"], "snippet": c["content"][:200], "score": c["score"],
+                        "table": c.get("table") or "", "rowStart": c.get("rowStart"),
+                        "rowEnd": c.get("rowEnd"), "sourceType": c.get("sourceType") or ""}
                        for c in chunks]
     except Exception as exc:  # noqa: BLE001
         logger.info("RAG 检索跳过（降级普通对话）: %s", exc)

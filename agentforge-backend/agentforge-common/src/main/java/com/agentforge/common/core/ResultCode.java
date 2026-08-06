@@ -37,9 +37,10 @@ public enum ResultCode {
 
     // ---- 40xxx 文件 / RAG 错误 ----
     FILE_TYPE_NOT_ALLOWED(40001, "不支持的文件类型"),
-    FILE_TOO_LARGE(40002, "文件大小超出限制（20MB）"),
+    FILE_TOO_LARGE(40002, "文件大小超出限制"),
     FILE_EMPTY(40003, "文件内容为空"),
     RAG_ERROR(40004, "知识库处理失败"),
+    FILE_CONTENT_INVALID(40005, "文件内容与扩展名不符"),
 
     // ---- 50xxx 系统错误 ----
     SYSTEM_ERROR(50000, "系统内部错误");

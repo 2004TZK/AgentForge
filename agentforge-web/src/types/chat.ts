@@ -3,11 +3,19 @@
 /** 助手消息状态：streaming 打字机中 / done 完成 / error 失败 */
 export type ChatMessageStatus = 'streaming' | 'done' | 'error'
 
-/** 知识库引用来源（M2 起含片段，可点击查看） */
+/** 知识库引用来源（M2 起含片段，可点击查看；数据库类含表名与行号区间） */
 export interface SourceItem {
   file: string
   snippet: string
   score: number
+  /** 结构化来源：表名/sheet 名（sqlite/csv 文件） */
+  table?: string
+  /** 行号区间起点 */
+  rowStart?: number
+  /** 行号区间终点 */
+  rowEnd?: number
+  /** 来源类型：sqlite / csv / pdf / docx / txt / md */
+  sourceType?: string
 }
 
 /** 星盘点位（行星/四轴）：星座 + 度数 + 黄道经度 */
@@ -120,5 +128,24 @@ export interface DocumentItem {
   fileName: string
   fileType: string
   status: 'PENDING' | 'PROCESSING' | 'READY' | 'FAILED'
+  /** 切片数（入库完成后回填） */
+  chunkCount?: number
+  /** 切片方式：auto/manual */
+  slicingMode?: string
+  /** 已入库 chunk 数（异步入库进度） */
+  processedChunks?: number
+  /** 总 chunk 数（异步入库进度） */
+  totalChunks?: number
+  /** 手动切片参数快照（手动模式回显） */
+  slicingConfig?: string
   createdTime: string
+}
+
+/** 手动切片预览（后端 /file/preview 响应） */
+export interface SlicePreview {
+  sourceType: string
+  totalRows: number
+  tableCount: number
+  tables: { name: string; columns: string[]; rowCount: number }[]
+  sampleChunks: { content: string; table: string; rowStart: number; rowEnd: number }[]
 }
