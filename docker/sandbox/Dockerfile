@@ -10,7 +10,7 @@ FROM python:3.12-slim
 
 # nodejs：JavaScript 代码执行运行时；iptables：容器内出站拦截（无外网）
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends nodejs iptables \
+    && apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=60 install -y --no-install-recommends nodejs iptables \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /srv
