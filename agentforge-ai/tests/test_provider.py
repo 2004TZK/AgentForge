@@ -1,4 +1,5 @@
 """M4 多模型配置测试：LLMClient 请求级 Provider 覆盖（base_url/api_key/local 分流）。"""
+from app.core.config import settings
 from app.services.llm import LLMClient
 
 
@@ -21,3 +22,23 @@ class TestProviderOverride:
         """无 Provider 时回落环境变量（决策 v1.4：默认远端千问云端）。"""
         client = LLMClient(None)
         assert client.local is False  # settings.llm_local 默认 False（云端 API）
+
+    def test_model_override(self):
+        """请求级模型名覆盖生效；缺省回落 settings.llm_model。"""
+        client = LLMClient(None, "qwen3-max")
+        assert client.model == "qwen3-max"
+        client2 = LLMClient(None)
+        assert client2.model == settings.llm_model
+
+    def test_dashscope_payload_disables_thinking(self):
+        """DashScope 远端默认关闭思考（提速）；其他服务商不受影响。"""
+        client = LLMClient({"type": "openai",
+                            "baseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+                            "apiKey": "sk-test"})
+        payload = client._payload([{"role": "user", "content": "hi"}], 0.7)
+        assert payload.get("enable_thinking") is False
+
+        other = LLMClient({"type": "openai",
+                           "baseUrl": "https://api.deepseek.com/v1", "apiKey": "sk-test"})
+        payload2 = other._payload([{"role": "user", "content": "hi"}], 0.7)
+        assert "enable_thinking" not in payload2

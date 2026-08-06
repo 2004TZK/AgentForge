@@ -72,6 +72,56 @@ def _fake_llm_with_tools(responses: list[dict], calls: list):
 # ---------------- ReAct 循环 ----------------
 
 class TestReactLoop:
+    def test_star_chart_answer_capped_at_max(self, monkeypatch, fake_redis):
+        """绑定 star_chart 的智能体回答超长时按句子边界截断至硬上限。"""
+        long_text = "完整解读。" * 700  # 3500 字，超过 3000 上限
+        monkeypatch.setattr(llm_client, "chat_with_tools",
+                            lambda messages, tools, temperature=0.7:
+                            {"content": long_text, "tool_calls": []})
+        result = agent_runtime.run_chat(agent_id=4, message="1994-05-20 14:30 北京",
+                                        tools=["star_chart"])
+        assert len(result["answer"]) <= settings.llm_answer_max_chars
+        assert result["answer"].endswith("。")
+
+    def test_non_star_chart_answer_not_capped(self, monkeypatch, fake_redis):
+        """未绑定 star_chart 的智能体不受硬上限约束。"""
+        long_text = "很长的回答。" * 2000
+        monkeypatch.setattr(llm_client, "chat_with_tools",
+                            lambda messages, tools, temperature=0.7:
+                            {"content": long_text, "tool_calls": []})
+        result = agent_runtime.run_chat(agent_id=1, message="讲个故事",
+                                        tools=["calculator"])
+        assert len(result["answer"]) == len(long_text)
+
+    def test_trim_text_sentence_boundary(self):
+        """trim_text 在句子边界收尾，不腰斩句子。"""
+        from app.utils import trim_text
+        text = "句子。" * 20  # 60 字
+        cut = trim_text(text, 30)
+        assert len(cut) <= 30
+        assert cut.endswith("。")
+
+    def test_model_name_reaches_llm_client(self, monkeypatch, fake_redis):
+        """run_chat 的 model_name 透传至 LLM 客户端（Agent 绑定模型生效）。"""
+        captured = {}
+
+        class FakeLLMClient:
+            def __init__(self, provider=None, model=None):
+                captured["provider"] = provider
+                captured["model"] = model
+
+            def chat(self, messages, temperature=0.7):
+                return "绑定模型回答"
+
+            def chat_with_tools(self, messages, tools, temperature=0.7):
+                return {"content": "绑定模型回答", "tool_calls": []}
+
+        monkeypatch.setattr(agent_runtime, "LLMClient", FakeLLMClient)
+        result = agent_runtime.run_chat(agent_id=1, message="你好", model_name="qwen3-max")
+        assert result["answer"] == "绑定模型回答"
+        assert captured["model"] == "qwen3-max"
+        assert captured["provider"] is None
+
     def test_llm_decides_tool_then_summarizes(self, monkeypatch, fake_redis):
         """LLM 决策调用 calculator → 执行回填 → LLM 总结，answer 为总结文本。"""
         calls = []

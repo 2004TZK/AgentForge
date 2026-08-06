@@ -22,13 +22,15 @@ _MOCK_CHUNK_SIZE = 12
 
 
 class LLMClient:
-    def __init__(self, provider: dict | None = None) -> None:
+    def __init__(self, provider: dict | None = None, model: str | None = None) -> None:
         """M4 多模型配置：provider 为请求级覆盖 {type, baseUrl, apiKey}，
-        缺省回落环境变量（保持本地开发与旧调用兼容）。"""
+        缺省回落环境变量（保持本地开发与旧调用兼容）。
+        model 为请求级模型名覆盖（Agent 绑定模型 / 工作流 llm 节点），
+        缺省回落 settings.llm_model。"""
         p = provider or {}
         self.base_url = (p.get("baseUrl") or settings.llm_base_url).rstrip("/")
         self.api_key = p.get("apiKey") if p.get("apiKey") else settings.llm_api_key
-        self.model = settings.llm_model
+        self.model = model or settings.llm_model
         self.timeout = settings.llm_timeout_seconds
         # 请求级显式指定的 Provider 类型（ollama/openai）；未指定时动态读环境变量
         self._provider_type = p.get("type") or None
@@ -422,10 +424,14 @@ class LLMClient:
 
     def _payload(self, messages: list[dict], temperature: float) -> dict:
         payload = {"model": self.model, "messages": messages, "temperature": temperature}
-        # Ollama 本地推理模型（qwen3.5 等）默认开启思考模式会先产出大量推理 token，
-        # 聊天场景极慢；仅本地模型传递 think 参数，远端 OpenAI 兼容服务不发送
         if self.local:
+            # Ollama 本地推理模型（qwen3.5 等）默认开启思考模式会先产出大量推理 token，
+            # 聊天场景极慢；本地用原生 think 参数控制
             payload["think"] = settings.llm_think
+        elif settings.llm_remote_disable_thinking and "dashscope" in self.base_url:
+            # 千问 qwen3 系列（DashScope 兼容接口）默认产出 reasoning_content，
+            # 实测拖慢首 token 与工具决策约 30%+；按配置关闭（enable_thinking=false）
+            payload["enable_thinking"] = False
         return payload
 
     def _headers(self) -> dict:

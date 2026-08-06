@@ -28,6 +28,10 @@
             <artifactId>agentforge-module-workflow</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.agentforge</groupId>
+            <artifactId>agentforge-module-ai-gateway</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
         </dependency>

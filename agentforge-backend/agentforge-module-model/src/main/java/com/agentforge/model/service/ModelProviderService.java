@@ -14,7 +14,7 @@ public interface ModelProviderService {
     /** 列表：系统内置（creator_id=0）+ 本人创建的，按启用优先/时间倒序 */
     List<ProviderVO> list(Long viewerId);
 
-    /** 按 ID 查询启用的 Provider（供聊天透传；未找到返回 null，回落内置 Ollama） */
+    /** 按 ID 查询启用的 Provider（供聊天透传；未找到返回 null，回落内置千问云端） */
     ModelProvider getEnabledOrNull(Long providerId);
 
     ProviderVO create(ProviderRequest request, Long creatorId);

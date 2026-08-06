@@ -59,6 +59,18 @@ services:
       start_period: 10s
     networks: [agentforge-dev-net]
 
+  # M5 沙箱执行器：受限执行自定义代码工具（无外网，仅本机 AI 服务可调用）
+  sandbox:
+    build: ./docker/sandbox
+    container_name: agentforge-dev-sandbox
+    environment:
+      SANDBOX_INTERNAL_TOKEN: ${SANDBOX_INTERNAL_TOKEN:-dev-sandbox-token}
+    cap_add:
+      - NET_ADMIN            # iptables 出站拦截需要
+    ports:
+      - "${SANDBOX_PORT:-8700}:8700"   # 仅开发需要，可注释
+    networks: [agentforge-dev-net]
+
 networks:
   agentforge-dev-net:
     name: agentforge-dev-net

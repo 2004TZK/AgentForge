@@ -1,9 +1,10 @@
 # ============================================================
 # AgentForge 一键启动（生产/演示形态）
-# 9 个服务：mysql redis qdrant migrate ssl-init ai backend web nginx
+# 10 个服务：mysql redis qdrant migrate ssl-init ai sandbox backend web nginx
 # 使用：cp .env.example .env && docker compose up -d --build
 # M4：migrate 自动应用数据库迁移；ssl-init 自动生成 HTTPS 证书；
 #     全局日志限额 + 各服务资源上限（见下方 x-logging / deploy）
+# M5：sandbox 沙箱执行器（无外网）支撑自定义代码工具
 # 决策 v1.4：LLM 与 Embedding 全部走千问云端 API，无本地模型/Ollama 容器
 # ============================================================
 
@@ -98,6 +99,7 @@ services:
       LLM_LOCAL: ${LLM_LOCAL:-false}
       LLM_MODEL: ${LLM_MODEL:-qwen3.7-plus}
       LLM_TIMEOUT_SECONDS: ${LLM_TIMEOUT_SECONDS:-300}
+      LLM_REMOTE_DISABLE_THINKING: ${LLM_REMOTE_DISABLE_THINKING:-true}
       EMBEDDING_BASE_URL: ${EMBEDDING_BASE_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1}
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-v3}
       EMBEDDING_DIM: ${EMBEDDING_DIM:-1024}
@@ -107,11 +109,16 @@ services:
       REDIS_PORT: "6379"
       INTERNAL_TOKEN: ${INTERNAL_TOKEN:-dev-internal-token}
       UPLOAD_DIR: /data/uploads
+      # M5 自定义工具：代码工具经 sandbox 沙箱执行（无外网）；HTTP 工具 SSRF 防护默认开启
+      SANDBOX_BASE_URL: http://sandbox:8700
+      SANDBOX_INTERNAL_TOKEN: ${SANDBOX_INTERNAL_TOKEN:-dev-sandbox-token}
+      HTTP_TOOL_SSRF_ENABLED: ${HTTP_TOOL_SSRF_ENABLED:-true}
     volumes:
       - agentforge-uploads:/data/uploads
     depends_on:
       redis: { condition: service_healthy }
       qdrant: { condition: service_healthy }
+      sandbox: { condition: service_started }
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 10s
@@ -125,6 +132,25 @@ services:
       resources:
         limits:
           memory: 768m
+
+  # ---------- 沙箱执行器（M5：受限执行用户代码，无外网） ----------
+  # 网络：加入 agentforge-net（AI 服务可访问）；entrypoint 以 iptables 拒绝主动出站新连接
+  # （仅放行已建立连接的回复），实现"无外网"语义；子进程降权 nobody + 资源限制
+  sandbox:
+    build: ./docker/sandbox
+    container_name: agentforge-sandbox
+    environment:
+      SANDBOX_INTERNAL_TOKEN: ${SANDBOX_INTERNAL_TOKEN:-dev-sandbox-token}
+    cap_add:
+      - NET_ADMIN            # iptables 出站拦截需要
+    networks: [agentforge-net]
+    restart: unless-stopped
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"
 
   # ---------- 数据库迁移（一次性：按文件名顺序应用 upgrade/*.sql，幂等） ----------
   migrate:
@@ -161,6 +187,8 @@ services:
       SPRING_DATA_REDIS_PORT: "6379"
       AGENTFORGE_JWT_SECRET: ${JWT_SECRET:-dev-only-jwt-secret-0123456789abcdef-0123456789}
       AGENTFORGE_JWT_EXPIRE_HOURS: ${JWT_EXPIRE_HOURS:-24}
+      # M5 自定义工具密钥 AES-GCM 加密（生产必须覆盖，≥32 字节）
+      AGENTFORGE_TOOL_SECRET: ${TOOL_SECRET:-dev-only-tool-secret-0123456789abcdef-0123456789}
       AGENTFORGE_AI_BASE_URL: http://ai:8000
       AGENTFORGE_AI_INTERNAL_TOKEN: ${INTERNAL_TOKEN:-dev-internal-token}
       AGENTFORGE_AI_CONNECT_TIMEOUT_MS: ${AGENTFORGE_AI_CONNECT_TIMEOUT_MS:-5000}

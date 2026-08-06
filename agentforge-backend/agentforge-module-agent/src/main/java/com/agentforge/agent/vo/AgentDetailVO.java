@@ -24,7 +24,7 @@ public class AgentDetailVO {
 
     private String modelName;
 
-    /** 模型 Provider ID（M4：NULL=内置 Ollama） */
+    /** 模型 Provider ID（M4：NULL=内置千问云端，回落 AI 服务环境变量） */
     private Long providerId;
 
     private BigDecimal temperature;

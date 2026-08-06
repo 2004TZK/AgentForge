@@ -11,9 +11,15 @@ import java.util.Map;
 @Data
 public class ToolConfigRequest {
 
-    /** 工具名：calculator / github */
+    /** 工具名：calculator / github / 自定义工具名 */
     @NotBlank(message = "工具名不能为空")
     private String toolName;
+
+    /** 工具来源（M5）：builtin=内置注册表 / custom=自定义工具定义，缺省 builtin */
+    private String toolSource = "builtin";
+
+    /** 自定义工具定义 ID（toolSource=custom 时必填） */
+    private Long toolDefinitionId;
 
     /** 工具参数配置（任意 JSON） */
     private Map<String, Object> toolConfig;

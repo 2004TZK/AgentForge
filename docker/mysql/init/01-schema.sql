@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS `agent` (
   `name`          VARCHAR(100)    NOT NULL                COMMENT '智能体名称',
   `description`   VARCHAR(500)    DEFAULT NULL            COMMENT '描述',
   `system_prompt` TEXT            NOT NULL                COMMENT '系统提示词',
-  `model_name`    VARCHAR(50)     NOT NULL DEFAULT 'deepseek-chat' COMMENT '默认模型',
+  `model_name`    VARCHAR(50)     NOT NULL DEFAULT 'qwen3.7-plus' COMMENT '默认模型',
   `provider_id`   BIGINT UNSIGNED DEFAULT NULL            COMMENT '模型 Provider ID（M4，NULL=默认）',
   `temperature`   DECIMAL(3,2)    NOT NULL DEFAULT 0.70   COMMENT '采样温度',
   `mode`          VARCHAR(20)     NOT NULL DEFAULT 'chat' COMMENT '运行模式 chat/workflow（M3）',

@@ -25,8 +25,14 @@ public class AgentTool {
     /** 智能体 ID */
     private Long agentId;
 
-    /** 工具名：calculator / github */
+    /** 工具名：calculator / github / 自定义工具名（供 LLM 调用） */
     private String toolName;
+
+    /** 工具来源（M5）：builtin=内置注册表 / custom=自定义工具定义 */
+    private String toolSource;
+
+    /** 自定义工具定义 ID（toolSource=custom 时） */
+    private Long toolDefinitionId;
 
     /** 工具参数配置（JSON） */
     @TableField(typeHandler = JacksonTypeHandler.class)

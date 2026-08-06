@@ -27,9 +27,9 @@ public class AgentUpdateRequest {
     @NotBlank(message = "系统提示词不能为空")
     private String systemPrompt;
 
-    private String modelName = "deepseek-chat";
+    private String modelName = "qwen3.7-plus";
 
-    /** 模型 Provider ID（M4：NULL=内置 Ollama） */
+    /** 模型 Provider ID（M4：NULL=内置千问云端，回落 AI 服务环境变量） */
     private Long providerId;
 
     @DecimalMin(value = "0", message = "temperature 需在 0-1 之间")

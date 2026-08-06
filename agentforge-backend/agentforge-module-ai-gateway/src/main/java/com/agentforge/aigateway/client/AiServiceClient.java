@@ -8,6 +8,8 @@ import com.agentforge.aigateway.dto.AiIngestResponse;
 import com.agentforge.aigateway.dto.AiPreviewResponse;
 import com.agentforge.aigateway.dto.AiWorkflowRunRequest;
 import com.agentforge.aigateway.dto.AiWorkflowRunResponse;
+import com.agentforge.aigateway.dto.AiToolTestRequest;
+import com.agentforge.aigateway.dto.AiToolTestResponse;
 import com.agentforge.common.core.ResultCode;
 import com.agentforge.common.exception.BusinessException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -226,6 +228,26 @@ public class AiServiceClient {
         }
     }
 
+    /**
+     * 自定义工具测试：POST /agent/tools/test（定义 + 示例参数 → AI 服务真实执行一次）。
+     * 执行失败不抛业务异常（ok=false 结构返回，前端展示可读失败原因）。
+     */
+    public AiToolTestResponse testTool(AiToolTestRequest request) {
+        try {
+            return restClient.post()
+                    .uri("/agent/tools/test")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(request)
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError, (req, res) -> {
+                        throw mapAiError(res);
+                    })
+                    .body(AiToolTestResponse.class);
+        } catch (ResourceAccessException e) {
+            throw mapConnectError(e, "工具测试超时");
+        }
+    }
+
     /** 工具元数据：GET /agent/tools/meta（前端按 Schema 渲染工具配置表单） */
     public List<Map<String, Object>> getToolMeta() {
         try {
@@ -345,6 +367,7 @@ public class AiServiceClient {
         body.put("tools", request.getTools());
         body.put("userId", request.getUserId());
         body.put("toolConfigs", request.getToolConfigs());
+        body.put("customTools", request.getCustomTools());
         return body;
     }
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** 品牌钢印：锻黑方块中烧出的「A」，像热烙在零件上的标记 */
+/** 品牌星印：深空方块中亮起的「A」，像夜空中最亮的星 */
 withDefaults(defineProps<{ size?: number }>(), { size: 30 })
 </script>
 
@@ -13,10 +13,10 @@ withDefaults(defineProps<{ size?: number }>(), { size: 30 })
     role="img"
     aria-label="AgentForge"
   >
-    <rect x="1.5" y="1.5" width="29" height="29" rx="7" fill="#17130c" stroke="#e8590c" stroke-width="1.6" />
+    <rect x="1.5" y="1.5" width="29" height="29" rx="7" fill="#0a0f24" stroke="#ffcf6b" stroke-width="1.6" />
     <path
       d="M9 22 L16 9.5 L23 22 M12 18.2 H20"
-      stroke="#e8590c"
+      stroke="#ffcf6b"
       stroke-width="2.6"
       stroke-linecap="round"
       stroke-linejoin="round"

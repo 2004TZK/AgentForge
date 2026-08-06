@@ -1,23 +1,23 @@
-/* ============ AgentForge · 锻造工坊设计系统 ============
-   纸（paper）· 墨（ink）· 钢（steel）· 锻火（forge）
-   锻火橙只出现在「做功」的瞬间：流式光标、运行中、聚焦。
-   一切静止的界面用纸、墨、发丝线；等宽字体是零件钢印。 */
+/* ============ AgentForge · 星空设计系统 ============
+   深空（night）· 星尘（dust）· 星轨（orbit）· 星辉（star）
+   星辉金只出现在「做功」的瞬间：流式光标、运行中、聚焦。
+   一切静止的界面用深空蓝、星尘灰与发丝星轨；等宽字体是星图坐标。 */
 
 :root {
-  /* 色板 */
-  --ink: #221d15;
-  --ink-deep: #17130c;
-  --ink-soft: #2e2820;
-  --paper: #f4f0e8;
-  --card: #fffdf7;
-  --line: #e1dacb;
-  --steel: #6f6a5b;
-  --forge: #b54300; /* 锻火橙（正文安全） */
-  --forge-glow: #e8590c; /* 余烬亮橙 */
-  --forge-tint: rgba(181, 67, 0, 0.08);
-  --rust: #b3261e;
-  --patina: #2e7d46;
-  --warn: #92600a;
+  /* 星空色板 */
+  --ink: #e8eaf4;           /* 正文：星尘白 */
+  --ink-deep: #0a0f24;      /* 深空底色（侧栏/深底） */
+  --ink-soft: #1b2444;      /* 悬浮/次级底 */
+  --paper: #0d1330;         /* 页面深空蓝 */
+  --card: #141c3f;          /* 卡片夜蓝 */
+  --line: #2b3765;          /* 发丝线：星轨蓝 */
+  --steel: #8b93b8;         /* 弱化文字：星尘蓝灰 */
+  --forge: #ffcf6b;         /* 星辉金（正文安全） */
+  --forge-glow: #ffe2a3;    /* 亮星金 */
+  --forge-tint: rgba(255, 207, 107, 0.1);
+  --rust: #ff7a7a;          /* 警示红（深底提亮） */
+  --patina: #63d9a8;        /* 成功绿（深底提亮） */
+  --warn: #f0b45c;          /* 琥珀 */
 
   /* 字体 */
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
@@ -27,7 +27,7 @@
   /* 几何 */
   --radius: 8px;
   --radius-sm: 6px;
-  --shadow: 0 1px 2px rgba(34, 29, 21, 0.05), 0 2px 10px rgba(34, 29, 21, 0.05);
+  --shadow: 0 2px 6px rgba(0, 0, 0, 0.35), 0 8px 28px rgba(0, 0, 0, 0.4);
 }
 
 * {
@@ -47,14 +47,23 @@ body {
   font-size: 14px;
   line-height: 1.6;
   color: var(--ink);
-  /* 工作台图纸：极淡的绘图网格 */
   background-color: var(--paper);
-  background-image: repeating-linear-gradient(
-      0deg,
-      rgba(34, 29, 21, 0.036) 0 1px,
-      transparent 1px 28px
-    ),
-    repeating-linear-gradient(90deg, rgba(34, 29, 21, 0.036) 0 1px, transparent 1px 28px);
+  /* 星空：星点 + 星云微光（星点用多个 radial-gradient 拼出，柔和不刺眼） */
+  background-image:
+    radial-gradient(1px 1px at 12% 22%, rgba(255, 255, 255, 0.9) 0, transparent 100%),
+    radial-gradient(1.5px 1.5px at 28% 68%, rgba(255, 255, 255, 0.7) 0, transparent 100%),
+    radial-gradient(1px 1px at 43% 12%, rgba(255, 255, 255, 0.85) 0, transparent 100%),
+    radial-gradient(1.2px 1.2px at 57% 38%, rgba(255, 214, 165, 0.9) 0, transparent 100%),
+    radial-gradient(1px 1px at 66% 82%, rgba(255, 255, 255, 0.7) 0, transparent 100%),
+    radial-gradient(1.4px 1.4px at 78% 28%, rgba(255, 255, 255, 0.8) 0, transparent 100%),
+    radial-gradient(1px 1px at 88% 58%, rgba(190, 200, 255, 0.9) 0, transparent 100%),
+    radial-gradient(1.2px 1.2px at 94% 16%, rgba(255, 255, 255, 0.75) 0, transparent 100%),
+    radial-gradient(1px 1px at 6% 86%, rgba(255, 255, 255, 0.65) 0, transparent 100%),
+    radial-gradient(1px 1px at 35% 92%, rgba(255, 230, 180, 0.8) 0, transparent 100%),
+    radial-gradient(ellipse 80% 55% at 78% 12%, rgba(88, 101, 242, 0.18), transparent 60%),
+    radial-gradient(ellipse 70% 50% at 15% 88%, rgba(168, 85, 247, 0.14), transparent 60%),
+    radial-gradient(ellipse 60% 45% at 50% 45%, rgba(56, 120, 255, 0.08), transparent 65%);
+  background-attachment: fixed;
 }
 
 a {
@@ -73,7 +82,7 @@ a:hover {
 }
 
 ::selection {
-  background: rgba(232, 89, 12, 0.24);
+  background: rgba(255, 207, 107, 0.28);
 }
 
 /* ---- 按钮 ---- */
@@ -89,17 +98,17 @@ a:hover {
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
-  background: var(--ink);
-  color: var(--card);
+  background: var(--forge);
+  color: var(--ink-deep);
   transition: background 0.15s, border-color 0.15s, color 0.15s, opacity 0.15s;
 }
 
 .btn:hover {
-  background: var(--ink-soft);
+  background: var(--forge-glow);
 }
 
 .btn:active {
-  background: var(--ink-deep);
+  background: #f0bc66;
 }
 
 .btn:disabled {
@@ -116,19 +125,20 @@ a:hover {
 .btn-secondary:hover {
   border-color: var(--forge);
   color: var(--forge);
-  background: var(--card);
+  background: var(--ink-soft);
 }
 
 .btn-secondary:active {
-  background: rgba(181, 67, 0, 0.05);
+  background: var(--ink-soft);
 }
 
 .btn-danger {
   background: var(--rust);
+  color: var(--ink-deep);
 }
 
 .btn-danger:hover {
-  background: #8f1d17;
+  background: #ff5c5c;
 }
 
 .btn-sm {
@@ -159,7 +169,7 @@ a:hover {
   font-size: 14px;
   font-family: inherit;
   color: var(--ink);
-  background: var(--card);
+  background: rgba(10, 15, 36, 0.65);
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
@@ -220,7 +230,7 @@ input[type='radio'] {
 }
 
 .table tr:hover td {
-  background: rgba(181, 67, 0, 0.03);
+  background: rgba(255, 207, 107, 0.05);
 }
 
 .table tbody tr:last-child td {

@@ -38,6 +38,7 @@ def chat(request: ChatRequest) -> ChatResponse:
         user_id=request.userId,
         tool_configs=request.toolConfigs,
         provider=request.provider,
+        custom_tools=request.customTools,
     )
     return ChatResponse(answer=result["answer"], sources=result["sources"],
                         toolCalls=result["toolCalls"])
@@ -71,6 +72,7 @@ async def _sse_events(request: ChatRequest):
         user_id=request.userId,
         tool_configs=request.toolConfigs,
         provider=request.provider,
+        custom_tools=request.customTools,
     )
     queue: asyncio.Queue[dict | None] = asyncio.Queue()
 

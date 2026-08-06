@@ -143,7 +143,7 @@ onMounted(load)
 
 <style scoped>
 .badge-muted {
-  background: rgba(111, 106, 91, 0.14);
+  background: rgba(139, 147, 184, 0.16);
   color: var(--steel);
 }
 </style>

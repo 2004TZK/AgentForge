@@ -25,4 +25,4 @@ COPY . .
 EXPOSE 8000
 
 # 生产建议 4 worker（容器内可调），--reload 仅本地开发使用
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]

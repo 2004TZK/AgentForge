@@ -55,6 +55,24 @@ const router = createRouter({
       meta: { title: '文件管理' },
     },
     {
+      path: '/tools',
+      name: 'tool-list',
+      component: () => import('../views/tool/ToolList.vue'),
+      meta: { title: '工具库' },
+    },
+    {
+      path: '/tools/new',
+      name: 'tool-create',
+      component: () => import('../views/tool/ToolEdit.vue'),
+      meta: { title: '新建工具' },
+    },
+    {
+      path: '/tools/:id/edit',
+      name: 'tool-edit',
+      component: () => import('../views/tool/ToolEdit.vue'),
+      meta: { title: '编辑工具' },
+    },
+    {
       path: '/workflows',
       name: 'workflow-list',
       component: () => import('../views/workflow/WorkflowList.vue'),
@@ -91,5 +109,27 @@ router.beforeEach((to) => {
   document.title = `${String(to.meta.title ?? '')} - AgentForge`
   return true
 })
+
+// 切换提速：页面空闲时预取全部懒加载路由 chunk，
+// 首次点击导航栏不再等待 chunk 网络加载，页面切换接近即时。
+if (typeof window !== 'undefined') {
+  const prefetchRoutes = (): void => {
+    router.getRoutes().forEach((route) => {
+      const comp = route.components?.default
+      if (typeof comp === 'function') {
+        comp().catch(() => {
+          /* 预取失败不影响正常导航 */
+        })
+      }
+    })
+  }
+  window.addEventListener('load', () => {
+    if ('requestIdleCallback' in window) {
+      window.requestIdleCallback(prefetchRoutes)
+    } else {
+      window.setTimeout(prefetchRoutes, 500)
+    }
+  })
+}
 
 export default router

@@ -120,12 +120,12 @@ export async function apiChatStream(
   let settled = false
 
   const dispatch = (event: ChatStreamEvent): void => {
-    settled = true
     switch (event.type) {
       case 'delta':
         if (event.content) handlers.onDelta(event.content)
         break
       case 'done':
+        settled = true
         handlers.onDone({
           answer: event.answer || '',
           sources: event.sources || [],
@@ -133,6 +133,7 @@ export async function apiChatStream(
         })
         break
       case 'error':
+        settled = true
         handlers.onError(event.message || '回答失败')
         break
       case 'tool':
@@ -165,6 +166,20 @@ export async function apiChatStream(
           dispatch(JSON.parse(raw) as ChatStreamEvent)
         } catch {
           /* 忽略无法解析的事件 */
+        }
+      }
+    }
+    // 流结束后处理残余 buffer：最后一个 SSE 帧可能没有结尾空行（帧尾被截断）
+    if (buffer.trim()) {
+      const dataLine = buffer.split('\n').find((l) => l.startsWith('data:'))
+      if (dataLine) {
+        const raw = dataLine.slice('data:'.length).trim()
+        if (raw) {
+          try {
+            dispatch(JSON.parse(raw) as ChatStreamEvent)
+          } catch {
+            /* 忽略无法解析的残余帧 */
+          }
         }
       }
     }

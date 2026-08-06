@@ -17,6 +17,7 @@ from app.core.config import settings
 from app.services import memory, planner, rag_service
 from app.services.llm import LLMClient, llm_client
 from app.tools import registry as tool_registry
+from app.utils import trim_text
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,7 @@ class ChatState(TypedDict):
     agent_id: int
     user_id: int | None
     provider: dict | None          # M4：请求级模型 Provider 覆盖 {type, baseUrl, apiKey}
+    model: str | None              # 请求级模型名覆盖（Agent 绑定模型；缺省用 AI 服务默认模型）
     system_prompt: str
     messages: list           # [{"role": ..., "content": ...}]
     message: str
@@ -36,6 +38,7 @@ class ChatState(TypedDict):
     tools: list[str]
     tool_schemas: list[dict]         # OpenAI function 格式（供 LLM 决策）
     tool_configs: dict               # {tool_name: config}（智能体工具配置）
+    custom_handlers: dict            # {tool_name: callable}（请求级自定义工具执行闭包）
     max_rounds: int
     round: int                       # 已执行工具轮数
     answer: str
@@ -48,10 +51,13 @@ class ChatState(TypedDict):
 # ---------------- ReAct 图节点 ----------------
 
 def _client(state: ChatState) -> LLMClient:
-    """请求级 Provider 覆盖（M4）：Agent 绑定 Provider 时按其 base_url/api_key 调用，
-    否则回落模块级默认客户端（环境变量配置）。"""
+    """请求级 Provider/模型覆盖（M4/M3）：Agent 绑定 Provider 或模型名时按其
+    base_url/api_key/model 调用，否则回落模块级默认客户端（环境变量配置）。"""
     provider = state.get("provider")
-    return llm_client if not provider else LLMClient(provider)
+    model = state.get("model")
+    if not provider and not model:
+        return llm_client
+    return LLMClient(provider, model)
 
 
 def _call_llm_node(state: ChatState) -> ChatState:
@@ -82,7 +88,8 @@ def _execute_tool_node(state: ChatState) -> ChatState:
     for call in pending:
         name = call["name"]
         args = call["arguments"] or {}
-        result = _safe_call_tool(name, args, state["tool_configs"].get(name))
+        result = _safe_call_tool(name, args, state["tool_configs"].get(name),
+                                 state.get("custom_handlers"))
         tool_msg: dict = {"role": "tool", "content": result}
         if call.get("tool_call_id"):  # OpenAI 兼容协议需 tool_call_id；Ollama 原生用 name
             tool_msg["tool_call_id"] = call["tool_call_id"]
@@ -150,7 +157,8 @@ def _rule_fallback(state: ChatState) -> ChatState:
         except Exception as exc:  # noqa: BLE001
             logger.warning("规则触发参数提取失败 %s: %s", name, exc)
             continue
-        result = _safe_call_tool(name, payload, state["tool_configs"].get(name))
+        result = _safe_call_tool(name, payload, state["tool_configs"].get(name),
+                                 state.get("custom_handlers"))
         notes.append(f"工具 {name} 结果: {result}")
         state["tool_calls"].append({"name": name, "arguments": payload, "result": result})
     if not notes:
@@ -248,13 +256,31 @@ def _assistant_tool_message(content: str, pending: list[dict]) -> dict:
     return msg
 
 
-def _safe_call_tool(name: str, args: dict, config: dict | None = None) -> str:
-    """工具调用兜底：任何异常转为失败说明文本回填（不阻断主链路）。"""
+def _safe_call_tool(name: str, args: dict, config: dict | None = None,
+                    custom_handlers: dict | None = None) -> str:
+    """工具调用兜底：自定义工具优先走请求级 handler；任何异常转为失败说明文本回填。"""
     try:
+        if custom_handlers and name in custom_handlers:
+            return custom_handlers[name](args or {}, config)
         return tool_registry.call_tool(name, args, config)
     except Exception as exc:  # noqa: BLE001 - 工具失败不影响对话主链路
         logger.warning("工具调用失败 %s: %s", name, exc)
         return f"[工具 {name} 调用失败: {exc}]"
+
+
+def _build_custom_handlers(custom_tools: list[dict] | None) -> dict:
+    """按请求构建自定义工具执行闭包（单条定义异常跳过并告警，保证主链路可用）。"""
+    handlers: dict = {}
+    for definition in custom_tools or []:
+        name = definition.get("name")
+        if not name or not isinstance(name, str):
+            logger.warning("自定义工具定义缺少 name，跳过")
+            continue
+        try:
+            handlers[name] = tool_registry.build_custom_handler(definition)
+        except Exception as exc:  # noqa: BLE001 - 单条构建失败不阻断主链路
+            logger.warning("自定义工具 handler 构建失败 %s: %s", name, exc)
+    return handlers
 
 
 def _format_tool_calls(tool_calls: list[dict]) -> list[str]:
@@ -269,8 +295,27 @@ def run_chat(*, agent_id: int, message: str, history: list[dict] | None = None,
              system_prompt: str | None = None, model_name: str | None = None,
              temperature: float | None = 0.7, tools: list[str] | None = None,
              user_id: int | None = None, tool_configs: dict | None = None,
-             provider: dict | None = None) -> dict:
-    """同步对话入口：ReAct 工具循环 → 规则兜底 → 记忆写入，返回 {answer, sources, toolCalls}。"""
+             provider: dict | None = None, custom_tools: list[dict] | None = None) -> dict:
+    """同步对话入口：ReAct 工具循环 → 规则兜底 → 记忆写入，返回 {answer, sources, toolCalls}。
+
+    custom_tools: 自定义工具定义（请求级作用域：schema 直接生成、handler 随请求构建，
+    不写入全局注册表，避免多请求同名工具并发串扰）。
+    """
+    return _run_chat_inner(
+        agent_id=agent_id, message=message, history=history,
+        system_prompt=system_prompt, model_name=model_name, temperature=temperature,
+        tools=tools, user_id=user_id, tool_configs=tool_configs, provider=provider,
+        custom_tools=custom_tools,
+        custom_handlers=_build_custom_handlers(custom_tools),
+    )
+
+
+def _run_chat_inner(*, agent_id: int, message: str, history: list[dict] | None = None,
+                    system_prompt: str | None = None, model_name: str | None = None,
+                    temperature: float | None = 0.7, tools: list[str] | None = None,
+                    user_id: int | None = None, tool_configs: dict | None = None,
+                    provider: dict | None = None, custom_tools: list[dict] | None = None,
+                    custom_handlers: dict | None = None) -> dict:
     messages, _, sources = prepare_chat(
         agent_id=agent_id, message=message, history=history,
         system_prompt=system_prompt, tools=tools, user_id=user_id,
@@ -279,13 +324,15 @@ def run_chat(*, agent_id: int, message: str, history: list[dict] | None = None,
         "agent_id": agent_id,
         "user_id": user_id,
         "provider": provider,
+        "model": model_name,
         "system_prompt": system_prompt or "",
         "messages": messages,
         "message": message,
         "temperature": temperature if temperature is not None else 0.7,
         "tools": tools or [],
-        "tool_schemas": tool_registry.openai_tools(tools or []),
+        "tool_schemas": tool_registry.openai_tools(tools or [], custom_tools),
         "tool_configs": tool_configs or {},
+        "custom_handlers": custom_handlers or {},
         "max_rounds": MAX_TOOL_ROUNDS,
         "round": 0,
         "answer": "",
@@ -306,6 +353,9 @@ def run_chat(*, agent_id: int, message: str, history: list[dict] | None = None,
                                                 temperature=result["temperature"])
 
     answer = result["answer"]
+    # 星盘类解读硬上限：提示词约束不可靠，服务层按句子边界兜底截断
+    if "star_chart" in (tools or []):
+        answer = trim_text(answer, settings.llm_answer_max_chars)
     if user_id is not None and answer:
         memory.append_round(agent_id, user_id, message, answer)
     return {
@@ -319,23 +369,41 @@ async def stream_chat(*, agent_id: int, message: str, history: list[dict] | None
                       system_prompt: str | None = None, model_name: str | None = None,
                       temperature: float | None = 0.7, tools: list[str] | None = None,
                       user_id: int | None = None, tool_configs: dict | None = None,
-                      provider: dict | None = None):
+                      provider: dict | None = None, custom_tools: list[dict] | None = None):
     """流式对话入口：ReAct 循环流式执行，产出事件字典。
 
     事件：{"type": "delta", "content"}（逐块）/
          {"type": "tool", "name", "arguments", "result"}（工具执行）/
          {"type": "done", "answer", "sources", "toolCalls"}（末尾）。
     工具轮通常无内容增量（模型直接输出 tool_calls）；文本轮增量照常输出。
+    custom_tools: 自定义工具定义（请求级作用域，与同步入口一致）。
     """
+    async for event in _stream_chat_inner(
+            agent_id=agent_id, message=message, history=history,
+            system_prompt=system_prompt, model_name=model_name, temperature=temperature,
+            tools=tools, user_id=user_id, tool_configs=tool_configs, provider=provider,
+            custom_tools=custom_tools,
+            custom_handlers=_build_custom_handlers(custom_tools)):
+        yield event
+
+
+async def _stream_chat_inner(*, agent_id: int, message: str, history: list[dict] | None = None,
+                             system_prompt: str | None = None, model_name: str | None = None,
+                             temperature: float | None = 0.7, tools: list[str] | None = None,
+                             user_id: int | None = None, tool_configs: dict | None = None,
+                             provider: dict | None = None, custom_tools: list[dict] | None = None,
+                             custom_handlers: dict | None = None):
     messages, _, sources = prepare_chat(
         agent_id=agent_id, message=message, history=history,
         system_prompt=system_prompt, tools=tools, user_id=user_id,
     )
-    tool_schemas = tool_registry.openai_tools(tools or [])
+    tool_schemas = tool_registry.openai_tools(tools or [], custom_tools)
     tool_calls: list[dict] = []
     temp = temperature if temperature is not None else 0.7
     full = ""
-    client = LLMClient(provider) if provider else llm_client
+    # 星盘类解读硬上限：超限后丢弃后续增量，done 按句子边界收尾
+    cap = settings.llm_answer_max_chars if "star_chart" in (tools or []) else None
+    client = LLMClient(provider, model_name) if (provider or model_name) else llm_client
 
     # ReAct 流式循环：前 MAX_TOOL_ROUNDS 轮带工具，之后强制无工具总结（保证终止）
     round_no = 0
@@ -344,8 +412,13 @@ async def stream_chat(*, agent_id: int, message: str, history: list[dict] | None
         holder = {"content": "", "tool_calls": []}
         async for event in _llm_round(client, messages, with_tools, tool_schemas, temp, holder):
             if event["type"] == "delta":
-                full += event["content"]
-                yield {"type": "delta", "content": event["content"]}
+                if cap is not None and len(full) >= cap:
+                    continue
+                delta = event["content"]
+                if cap is not None and len(full) + len(delta) > cap:
+                    delta = delta[: cap - len(full)]
+                full += delta
+                yield {"type": "delta", "content": delta}
         pending = holder["tool_calls"]
         if not pending:
             break
@@ -353,7 +426,8 @@ async def stream_chat(*, agent_id: int, message: str, history: list[dict] | None
         for call in pending:
             name = call["name"]
             args = call["arguments"] or {}
-            result = _safe_call_tool(name, args, (tool_configs or {}).get(name))
+            result = _safe_call_tool(name, args, (tool_configs or {}).get(name),
+                                     custom_handlers)
             tool_msg: dict = {"role": "tool", "content": result}
             if call.get("tool_call_id"):
                 tool_msg["tool_call_id"] = call["tool_call_id"]
@@ -373,7 +447,8 @@ async def stream_chat(*, agent_id: int, message: str, history: list[dict] | None
             except Exception as exc:  # noqa: BLE001
                 logger.warning("规则触发参数提取失败 %s: %s", name, exc)
                 continue
-            result = _safe_call_tool(name, payload, (tool_configs or {}).get(name))
+            result = _safe_call_tool(name, payload, (tool_configs or {}).get(name),
+                                     custom_handlers)
             fallback_notes.append(f"工具 {name} 结果: {result}")
             tool_calls.append({"name": name, "arguments": payload, "result": result})
             yield {"type": "tool", "name": name, "arguments": payload, "result": result}
@@ -382,9 +457,15 @@ async def stream_chat(*, agent_id: int, message: str, history: list[dict] | None
             last["content"] = f"{last['content']}\n\n[附加上下文]\n" + "\n".join(fallback_notes)
             messages[-1] = last
             async for delta in client.chat_stream(messages, temperature=temp):
+                if cap is not None and len(full) >= cap:
+                    break
+                if cap is not None and len(full) + len(delta) > cap:
+                    delta = delta[: cap - len(full)]
                 full += delta
                 yield {"type": "delta", "content": delta}
 
+    if cap is not None:
+        full = trim_text(full, cap)
     if user_id is not None and full:
         memory.append_round(agent_id, user_id, message, full)
     yield {"type": "done", "answer": full, "sources": sources,

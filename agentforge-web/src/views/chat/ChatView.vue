@@ -196,9 +196,16 @@ onMounted(async () => {
               class="bubble"
               :class="{ 'bubble-assistant': msg.role === 'assistant', 'bubble-streaming': msg.status === 'streaming', 'bubble-error': msg.status === 'error' }"
             >
-              <MarkdownView v-if="msg.role === 'assistant'" :content="msg.content" />
+              <template v-if="msg.role === 'assistant'">
+                <!-- 思考中效果：首字未到 / 工具轮次等待期间提示模型正在思考 -->
+                <div v-if="msg.status === 'streaming' && !msg.content" class="thinking">
+                  <span class="thinking-dots"><i></i><i></i><i></i></span>
+                  <span class="thinking-text">正在思考…</span>
+                </div>
+                <MarkdownView v-else :content="msg.content" />
+                <span v-if="msg.status === 'streaming' && msg.content" class="cursor">▍</span>
+              </template>
               <template v-else>{{ msg.content }}</template>
-              <span v-if="msg.status === 'streaming'" class="cursor">▍</span>
               <div v-if="msg.role === 'assistant' && msg.toolCalls?.length" class="tool-calls">
                 <span class="tool-calls-label">工具：</span>
                 <span v-for="(call, callIdx) in msg.toolCalls" :key="callIdx" class="tool-chip">
@@ -266,7 +273,7 @@ onMounted(async () => {
   width: 228px;
   padding: 18px 14px;
   border-right: 1px solid var(--line);
-  background: rgba(255, 253, 247, 0.55);
+  background: rgba(20, 28, 63, 0.55);
   overflow-y: auto;
   flex-shrink: 0;
 }
@@ -316,9 +323,9 @@ onMounted(async () => {
 
 /* 激活 = 烙上锻火标记 */
 .agent-btn.active {
-  background: var(--ink);
-  color: var(--card);
-  border-color: var(--ink);
+  background: var(--forge-tint);
+  color: var(--forge-glow);
+  border-color: var(--forge);
   font-weight: 600;
 }
 
@@ -405,10 +412,10 @@ onMounted(async () => {
   transition: border-color 0.6s ease, box-shadow 0.6s ease, background 0.6s ease;
 }
 
-/* 用户 = 墨黑的锻件 */
+/* 用户 = 星辉金 */
 .message.user .bubble {
-  background: var(--ink);
-  color: var(--card);
+  background: var(--forge);
+  color: var(--ink-deep);
 }
 
 /* 助手 = 冷却的金属：左缘余烬，完成后冷却回发丝线 */
@@ -421,7 +428,7 @@ onMounted(async () => {
 
 .bubble-streaming {
   border-left-color: var(--forge-glow);
-  box-shadow: 0 0 16px -4px rgba(232, 89, 12, 0.35);
+  box-shadow: 0 0 16px -4px rgba(255, 207, 107, 0.35);
 }
 
 .bubble-error {
@@ -450,6 +457,45 @@ onMounted(async () => {
   50% {
     opacity: 0.35;
     text-shadow: none;
+  }
+}
+
+/* 思考中效果：三点脉冲 + 文案（首字未到 / 工具轮次等待） */
+.thinking {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 22px;
+  color: var(--steel);
+  font-size: 13px;
+}
+.thinking-dots {
+  display: inline-flex;
+  gap: 4px;
+}
+.thinking-dots i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--forge);
+  animation: thinking-blink 1.2s infinite ease-in-out;
+}
+.thinking-dots i:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.thinking-dots i:nth-child(3) {
+  animation-delay: 0.4s;
+}
+@keyframes thinking-blink {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-2px);
   }
 }
 
@@ -544,7 +590,7 @@ onMounted(async () => {
   padding: 12px 16px;
   border-top: 1px solid var(--line);
   align-items: flex-end;
-  background: rgba(255, 253, 247, 0.55);
+  background: rgba(20, 28, 63, 0.55);
 }
 
 .input-box {

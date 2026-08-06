@@ -17,8 +17,9 @@ import time
 from typing import TypedDict
 
 from app.core.config import settings
-from app.services.llm import llm_client
+from app.services.llm import LLMClient, llm_client
 from app.tools import registry as tool_registry
+from app.utils import trim_text
 
 logger = logging.getLogger(__name__)
 
@@ -121,11 +122,15 @@ def _build_node_fn(node: dict):
                     {"role": "system", "content": "你是工作流执行节点，根据提示词生成输出。"},
                     {"role": "user", "content": prompt},
                 ]
-                output = llm_client.chat(messages, temperature=temperature)
+                # 节点显式指定模型时用独立客户端（不改动模块级默认客户端，避免并发串扰）；
+                # 未指定时沿用模块级 llm_client（默认模型，保持测试/旧调用兼容）
+                client = llm_client if model == llm_client.model else LLMClient(model=model)
+                output = client.chat(messages, temperature=temperature)
             else:  # tool
                 tool_name = params.get("tool") or ""
                 payload = _render_payload(params.get("payload") or {}, state["vars"])
                 output = tool_registry.call_tool(tool_name, payload)
+            log["durationMs"] = int((time.monotonic() - started) * 1000)
             log["output"] = str(output)[:LOG_OUTPUT_MAX]
             return {
                 **state,
@@ -135,6 +140,7 @@ def _build_node_fn(node: dict):
             }
         except Exception as exc:  # noqa: BLE001 - 节点失败转为 FAILED 日志，不抛异常
             logger.warning("工作流节点失败 %s: %s", key, exc)
+            log["durationMs"] = int((time.monotonic() - started) * 1000)
             log["status"] = "FAILED"
             log["error"] = str(exc)[:500]
             return {**state, "logs": state["logs"] + [log],
@@ -191,9 +197,12 @@ def execute_workflow(definition: dict, inputs: dict | None = None) -> dict:
     except Exception as exc:  # noqa: BLE001 - langgraph 版本/依赖异常时降级
         logger.warning("LangGraph 不可用，降级为手动执行: %s", exc)
         state = _execute_manually(nodes, state)
+    output = state.get("output") or ""
+    # 工作流报告硬上限：与星盘解读一致，按句子边界截断，防止超长输出
+    output = trim_text(output, settings.llm_answer_max_chars)
     return {
         "status": "FAILED" if state["failed"] else "SUCCESS",
-        "output": state.get("output") or "",
+        "output": output,
         "nodeLogs": state["logs"],
         "error": state.get("error") or "",
     }

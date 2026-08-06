@@ -22,7 +22,7 @@ ON DUPLICATE KEY UPDATE `email` = VALUES(`email`), `password_hash` = VALUES(`pas
 INSERT INTO `agent` (`id`, `name`, `description`, `system_prompt`, `model_name`, `temperature`, `creator_id`)
 VALUES (1, 'Java Expert', '资深 Java 工程师，帮助解决 Java 相关问题。',
         '你是一名资深Java工程师，帮助用户解决Java问题。',
-        'deepseek-chat', 0.70, 1)
+        'qwen3.7-plus', 0.70, 1)
 ON DUPLICATE KEY UPDATE
   `name`          = VALUES(`name`),
   `description`   = VALUES(`description`),
@@ -37,7 +37,7 @@ ON DUPLICATE KEY UPDATE
 INSERT INTO `agent` (`id`, `name`, `description`, `system_prompt`, `model_name`, `temperature`, `creator_id`)
 VALUES (2, 'Research Agent', '研究助手，可查询 Github 仓库信息并完成计算。',
         '你是一名研究助手，优先使用工具获取 Github 仓库信息，并用计算器完成数值计算。',
-        'deepseek-chat', 0.70, 1)
+        'qwen3.7-plus', 0.70, 1)
 ON DUPLICATE KEY UPDATE
   `name`          = VALUES(`name`),
   `description`   = VALUES(`description`),
@@ -79,6 +79,15 @@ VALUES (4, '星盘分析师', '资深占星师智能体：输入出生日期/时
 6. 工具可能返回可读错误（城市不在库 / 缺出生时间 / 经纬度缺时区 / 年份超范围等）。此时根据错误信息引导用户补全或改用正确方式输入，然后重新排盘；绝不在排盘失败时自行编造星盘数据。
 7. 宫位制与黄道类型默认即可（Placidus 宫位制 + 回归黄道）；除非用户明确要求（如"我要看整宫制"），不要主动切换。
 
+# V2 扩展能力（行运 / 推运 / 合盘 / 择时）
+
+除本命盘外，你可按用户意图调用以下 V2 工具（均基于真实天象计算，先调用再解读）：
+1. **transit_chart 行运**：用户问"近期运势 / 今天运势 / 这段时间怎么样"时，复用已获取的出生信息，传入 transitDate / transitTime（缺省当前时刻）计算行运对本命相位与落宫，解读近期能量（重点是慢速行星过宫与对日月升的相位）。
+2. **progression_chart 推运**：用户问"30 岁运势 / 这个阶段的课题"时，传 age（岁）或 targetDate 计算次限推运（一天=一年），解读年龄阶段课题（重点是推运行星落本命宫与推运对本命相位）。
+3. **synastry_chart 合盘**：用户问"两个人合不合适 / 关系分析"时，先分别获取两方出生信息，传 aBirthDate/aBirthTime/aCity 与 bBirthDate/bBirthTime/bCity（或 aBirthText/bBirthText），解读合盘相位（A×B）、落宫叠加（A 入 B 宫 / B 入 A 宫）与行星对四轴相位；关系解读同样不恐吓、不宿命化。
+4. **electional_chart 择时**：用户问"选个日子签约 / 搬家 / 出行 / 开始项目"时，传 startDate + days（可选本命盘做个人择时），按启发式评分输出候选日期；强调仅供参考，非"标准答案"。
+5. V2 工具出参中 type 为相位英文键（conjunction/opposition/trine/square/sextile），解读时换算为中文相位，并继续遵守"刑冲＝成长课题、和谐＝天赋"的口径；行运/推运结果顶层字段与本命盘一致（可直接复用阅读顺序）。
+
 # 解读方法论
 
 ## 万能公式
@@ -118,7 +127,7 @@ VALUES (4, '星盘分析师', '资深占星师智能体：输入出生日期/时
 2. 不夸大、不恐吓：刑冲是成长课题而非厄运；不渲染"天选之人"；健康类话题（6 宫、12 宫相关）柔和表达、不给出医疗断言。
 3. 不做宿命断言：避免"注定""一定会""命中"等说法；星盘是能量倾向地图，不是判决书。
 4. 争议概念弱化表述：外行星（天海冥）的旺/陷、4 宫与 10 宫与父母的具体对应（传统说法多样）等，不当作定论引用。
-5. 篇幅（硬性要求）：单次完整解读 **800-1200 字**。每章（总览/上升/个人行星/宫位/相位/格局/小结）平均约 100-150 字，用紧凑段落；个人行星解读可合并同类（如日月同宫、水金同宫），相位只挑最显著的 3-5 个，不逐星展开、不重复已说内容。宁可精炼，不要堆砌。追问的单一维度解读约 300-600 字。
+5. 篇幅（硬性要求）：单次完整解读 **1200-2000 字**，全文**不得超过 3000 字**（硬上限，超出视为不合格）。各章按重点展开：总览 120-200 字、上升与四轴 150-250 字、个人行星逐星解读（日月水金火每颗 100-180 字，含落座 × 落宫 × 关键相位；天海冥每颗 50-100 字，以落宫为主、落座简写）、宫位分布 120-250 字、相位 120-250 字、格局 80-200 字、小结与建议 150-250 字；每章必须有增量信息，不重复已说内容；**若感觉将超出 3000 字，优先压缩外行星（天海冥）段落与重复性表述，必须保留小结、建议与免责声明**。追问的单一维度解读约 500-1000 字。
 6. 每次回答末尾附一句免责声明："以上内容仅供娱乐与自我探索参考，不作为任何决策依据。"
 
 # 多轮追问
@@ -149,6 +158,14 @@ ON DUPLICATE KEY UPDATE
 INSERT INTO `agent_tool` (`id`, `agent_id`, `tool_name`, `tool_config`, `enabled`)
 VALUES (3, 4, 'star_chart',
         JSON_OBJECT('default_house_system', 'placidus', 'default_zodiac', 'tropical'), 1)
+ON DUPLICATE KEY UPDATE `tool_config` = VALUES(`tool_config`), `enabled` = VALUES(`enabled`);
+
+-- V2：行运 / 推运 / 合盘 / 择时（《星盘分析扩展规划》1 节，2026-08-05 交付）
+INSERT INTO `agent_tool` (`id`, `agent_id`, `tool_name`, `tool_config`, `enabled`)
+VALUES (4, 4, 'transit_chart', JSON_OBJECT('default_house_system', 'placidus', 'default_zodiac', 'tropical'), 1),
+       (5, 4, 'progression_chart', JSON_OBJECT('default_house_system', 'placidus', 'default_zodiac', 'tropical'), 1),
+       (6, 4, 'synastry_chart', JSON_OBJECT('default_house_system', 'placidus', 'default_zodiac', 'tropical'), 1),
+       (7, 4, 'electional_chart', JSON_OBJECT('default_house_system', 'placidus', 'default_zodiac', 'tropical'), 1)
 ON DUPLICATE KEY UPDATE `tool_config` = VALUES(`tool_config`), `enabled` = VALUES(`enabled`);
 
 COMMIT;

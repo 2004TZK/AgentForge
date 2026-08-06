@@ -94,6 +94,8 @@ class TestExecute:
         logs = result["nodeLogs"]
         assert [log["node"] for log in logs] == ["calc1", "calc2"]
         assert all(log["status"] == "SUCCESS" for log in logs)
+        assert all(isinstance(log["durationMs"], int) and log["durationMs"] >= 0
+                   for log in logs), "节点耗时字段应为非负整数（真实执行可能 <1ms 截断为 0）"
 
     def test_github_repo_workflow(self, monkeypatch):
         """验收示例：查仓库 → 算指标 → 生成报告（github + calculator + llm 三节点）。"""
@@ -168,3 +170,39 @@ class TestExecute:
             ]}, {})
         assert result["status"] == "SUCCESS"
         assert "Mock" in result["output"]
+
+    def test_llm_node_honors_model_override(self, monkeypatch):
+        """LLM 节点显式指定 model 时按该模型调用（缺省走模块级 llm_client）。"""
+        captured = {}
+
+        class FakeLLMClient:
+            def __init__(self, provider=None, model=None):
+                captured["model"] = model
+
+            def chat(self, messages, temperature=0.7):
+                return "模型覆盖回答"
+
+        monkeypatch.setattr(workflow_engine, "LLMClient", FakeLLMClient)
+        result = workflow_engine.execute_workflow({
+            "nodes": [
+                {"nodeKey": "report", "type": "llm",
+                 "params": {"prompt": "生成报告", "model": "qwen3-max"},
+                 "next": None},
+            ]}, {})
+        assert result["status"] == "SUCCESS"
+        assert result["output"] == "模型覆盖回答"
+        assert captured["model"] == "qwen3-max"
+
+    def test_workflow_output_capped_at_max(self, monkeypatch):
+        """工作流最终输出超过硬上限时按句子边界截断。"""
+        long_text = "报告内容。" * 800  # 4000 字
+        monkeypatch.setattr(llm_client, "chat",
+                            lambda messages, temperature=0.7: long_text)
+        result = workflow_engine.execute_workflow({
+            "nodes": [
+                {"nodeKey": "r", "type": "llm",
+                 "params": {"prompt": "生成报告"}, "next": None},
+            ]}, {})
+        assert result["status"] == "SUCCESS"
+        assert len(result["output"]) <= settings.llm_answer_max_chars
+        assert result["output"].endswith("。")

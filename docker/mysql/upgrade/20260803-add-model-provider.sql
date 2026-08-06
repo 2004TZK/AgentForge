@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS `model_provider` (
 SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS
   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'agent' AND COLUMN_NAME = 'provider_id');
 SET @ddl = IF(@col_exists = 0,
-  'ALTER TABLE `agent` ADD COLUMN `provider_id` BIGINT UNSIGNED DEFAULT NULL COMMENT ''模型 Provider ID（NULL=内置 Ollama）'' AFTER `model_name`',
+  'ALTER TABLE `agent` ADD COLUMN `provider_id` BIGINT UNSIGNED DEFAULT NULL COMMENT ''模型 Provider ID（NULL=内置千问云端）'' AFTER `model_name`',
   'SELECT 1');
 PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 

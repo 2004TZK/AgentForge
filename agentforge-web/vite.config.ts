@@ -21,7 +21,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         // M4 代码分割：框架依赖独立分包（长缓存 + 消除 >500KB 主包警告）
-        // element-plus 已按需引入（main.ts），不再整包分组，避免无用的 900KB 大 chunk
+        // 全站使用原生控件（main.ts 未引入第三方 UI 库），Element Plus 依赖已移除
         manualChunks: {
           'vue-vendor': ['vue', 'vue-router', 'pinia'],
           http: ['axios'],

@@ -105,8 +105,12 @@ export const useChatStore = defineStore('chat', () => {
             assistantMessage.toolCalls.push(
               `${event.name}(${JSON.stringify(event.arguments)}) → ${event.result.slice(0, 120)}`,
             )
-            // M2.5：star_chart 成功返回 JSON 时解析为结构化数据，渲染排盘卡片
-            if (event.name === 'star_chart' && event.result.startsWith('{')) {
+            // M2.5/V2：star_chart/transit_chart/progression_chart 返回 JSON 时解析为
+            // 结构化数据渲染排盘卡片（transit/progression 顶层字段与本命盘一致，另含扩展区块）
+            if (
+              ['star_chart', 'transit_chart', 'progression_chart'].includes(event.name)
+              && event.result.startsWith('{')
+            ) {
               try {
                 assistantMessage.chart = JSON.parse(event.result) as StarChartData
               } catch {

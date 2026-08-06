@@ -27,10 +27,10 @@ public class AgentCreateRequest {
     @NotBlank(message = "系统提示词不能为空")
     private String systemPrompt;
 
-    /** 默认模型，缺省 deepseek-chat */
-    private String modelName = "deepseek-chat";
+    /** 默认模型，缺省 qwen3.7-plus（千问云端） */
+    private String modelName = "qwen3.7-plus";
 
-    /** 模型 Provider ID（M4：NULL=内置 Ollama） */
+    /** 模型 Provider ID（M4：NULL=内置千问云端，回落 AI 服务环境变量） */
     private Long providerId;
 
     /** 采样温度 0-1，缺省 0.70 */

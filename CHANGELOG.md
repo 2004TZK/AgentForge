@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+### 新增（M5：用户自定义工具，文档《工具配置自定义开发文档 v3.0》）
+- 工具库：`tool_definition` 表 + CRUD/复制/测试接口（`/tool-definitions`），创建者隔离、名称校验（格式/用户级唯一/不与内置重名）
+- HTTP 工具执行器：URL/query/headers/body 模板渲染、认证注入（api_key/bearer/basic）、超时与响应体上限、SSRF 防护（内网/保留地址段拒绝 + DNS 二次校验）
+- 代码工具 + sandbox 沙箱执行器：受限执行 Python/JavaScript（非 root、RLIMIT 内存/CPU、超时强杀、无外网出站拦截、输出截断、Token 鉴权 + 限流）
+- Agent 绑定自定义工具：`agent_tool` 扩展 `tool_source`/`tool_definition_id`，聊天装配 `customTools` 透传 AI 服务请求级动态注册
+- 密钥安全：自定义工具密钥字段 AES-GCM 加密入库（`enc:v1:` 前缀）、详情脱敏 `********`、编辑留空不修改（掩码合并）
+- 前端：工具库列表/编辑器（HTTP 表单 + 代码编辑 + 参数 Schema 行式编辑 + 测试按钮）、AgentEdit 工具来源选择（内置/自定义）
+- 新增测试：AI 侧自定义工具冒烟测试（9 项）、后端 ToolDefinition 集成测试
+
 ### 新增（M4 进行中）
 - CI/CD：GitHub Actions 三端自动化验证（backend `mvn test` / ai `pytest` / web `npm run build`）+ GHCR 镜像构建
 - 数据库迁移自动化：`migrate` 一次性容器 + `schema_migrations` 幂等记录，替代手动 `mysql <` 升级

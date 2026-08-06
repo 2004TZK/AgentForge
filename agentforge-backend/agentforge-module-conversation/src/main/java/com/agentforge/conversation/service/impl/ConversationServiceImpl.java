@@ -2,8 +2,11 @@ package com.agentforge.conversation.service.impl;
 
 import com.agentforge.agent.entity.Agent;
 import com.agentforge.agent.entity.AgentTool;
+import com.agentforge.agent.entity.ToolDefinition;
 import com.agentforge.agent.mapper.AgentMapper;
 import com.agentforge.agent.mapper.AgentToolMapper;
+import com.agentforge.agent.service.ToolDefinitionService;
+import com.agentforge.agent.util.ToolSecretUtil;
 import com.agentforge.aigateway.client.AiServiceClient;
 import com.agentforge.aigateway.dto.AiChatRequest;
 import com.agentforge.aigateway.dto.AiChatResponse;
@@ -12,6 +15,7 @@ import com.agentforge.aigateway.dto.ChatHistoryItem;
 import com.agentforge.common.core.PageResult;
 import com.agentforge.common.core.ResultCode;
 import com.agentforge.common.exception.BusinessException;
+import com.agentforge.framework.security.AesGcmCrypto;
 import com.agentforge.conversation.dto.ChatRequest;
 import com.agentforge.conversation.entity.Conversation;
 import com.agentforge.conversation.entity.Session;
@@ -80,6 +84,8 @@ public class ConversationServiceImpl implements ConversationService {
     private final ObjectMapper objectMapper;
     private final WorkflowService workflowService;
     private final ModelProviderService modelProviderService;
+    private final ToolDefinitionService toolDefinitionService;
+    private final AesGcmCrypto aesGcmCrypto;
 
     @Override
     @Transactional
@@ -90,6 +96,10 @@ public class ConversationServiceImpl implements ConversationService {
         if ("workflow".equals(agent.getMode())) {
             WorkflowRunVO run = workflowService.runForAgent(
                     loadAgentWorkflow(agent), agent.getId(), request.getMessage(), userId);
+            if (!"SUCCESS".equals(run.getStatus())) {
+                throw new BusinessException(ResultCode.LLM_ERROR,
+                        "工作流执行失败: " + (run.getError() == null ? "未知原因" : run.getError()));
+            }
             AiChatResponse workflowResponse = new AiChatResponse();
             workflowResponse.setAnswer(run.getOutput() == null ? "" : run.getOutput());
             recordConversation(request, userId, workflowResponse);
@@ -137,13 +147,17 @@ public class ConversationServiceImpl implements ConversationService {
             BufferedReader reader = new BufferedReader(
                     new InputStreamReader(response.getBody(), StandardCharsets.UTF_8));
             String line;
+            boolean terminalForwarded = false;
             while ((line = reader.readLine()) != null) {
                 outputStream.write(line.getBytes(StandardCharsets.UTF_8));
                 outputStream.write('\n');
                 outputStream.flush();
+                if (terminalForwarded) {
+                    return; // 终端事件后的帧尾空行已转发，SSE 帧完整
+                }
                 String data = extractSseData(line);
                 if (data != null && handleStreamEvent(data, request, userId)) {
-                    return; // done/error 终端事件已转发
+                    terminalForwarded = true; // 继续转发帧尾空行后再结束
                 }
             }
         } catch (IOException e) {
@@ -336,7 +350,8 @@ public class ConversationServiceImpl implements ConversationService {
             history.add(new ChatHistoryItem("assistant", c.getAssistantMessage()));
         }
 
-        // 2. 加载 Agent 工具配置快照（M3：含工具配置 {tool_name: config} 透传 AI 服务）
+        // 2. 加载 Agent 工具配置快照（M3：含工具配置 {tool_name: config} 透传 AI 服务；
+        //    M5：custom 来源加载自定义工具定义，密钥解密后透传 AI 服务动态注册）
         List<AgentTool> agentTools = agentToolMapper.selectList(
                 new LambdaQueryWrapper<AgentTool>().eq(AgentTool::getAgentId, agent.getId()));
         List<String> tools = agentTools.stream()
@@ -344,9 +359,37 @@ public class ConversationServiceImpl implements ConversationService {
                 .map(AgentTool::getToolName)
                 .toList();
         Map<String, Map<String, Object>> toolConfigs = new HashMap<>();
+        List<Map<String, Object>> customTools = new ArrayList<>();
         for (AgentTool t : agentTools) {
+            if (!Boolean.TRUE.equals(t.getEnabled())) {
+                continue;
+            }
+            if ("custom".equals(t.getToolSource()) && t.getToolDefinitionId() != null) {
+                // 自定义工具：加载定义（含描述/参数/可执行配置），密钥解密后透传
+                try {
+                    ToolDefinition definition = toolDefinitionService.loadForAssembly(t.getToolDefinitionId());
+                    Map<String, Object> customTool = new HashMap<>();
+                    customTool.put("name", definition.getName());
+                    customTool.put("description", definition.getDescription() == null
+                            ? "" : definition.getDescription());
+                    customTool.put("parameters", definition.getParameters());
+                    if (definition.getHttpConfig() != null) {
+                        customTool.put("httpConfig",
+                                ToolSecretUtil.decryptSecrets(definition.getHttpConfig(), aesGcmCrypto));
+                    }
+                    if (definition.getScriptConfig() != null) {
+                        customTool.put("scriptConfig", definition.getScriptConfig());
+                    }
+                    customTools.add(customTool);
+                } catch (Exception e) {
+                    log.warn("加载自定义工具失败（跳过该工具）: agentId={}, definitionId={}, reason={}",
+                            agent.getId(), t.getToolDefinitionId(), e.getMessage());
+                }
+            }
             if (t.getToolConfig() != null && !t.getToolConfig().isEmpty()) {
-                toolConfigs.put(t.getToolName(), t.getToolConfig());
+                // 工具配置中密钥字段解密（密文 → 明文，供 AI 服务执行时使用）
+                toolConfigs.put(t.getToolName(),
+                        ToolSecretUtil.decryptSecrets(t.getToolConfig(), aesGcmCrypto));
             }
         }
 
@@ -373,6 +416,7 @@ public class ConversationServiceImpl implements ConversationService {
                 .tools(tools)
                 .userId(userId)
                 .toolConfigs(toolConfigs)
+                .customTools(customTools)
                 .build();
     }
 

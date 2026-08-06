@@ -8,12 +8,15 @@ import com.agentforge.agent.entity.AgentTool;
 import com.agentforge.agent.mapper.AgentMapper;
 import com.agentforge.agent.mapper.AgentToolMapper;
 import com.agentforge.agent.service.AgentService;
+import com.agentforge.agent.service.ToolDefinitionService;
+import com.agentforge.agent.util.ToolSecretUtil;
 import com.agentforge.agent.vo.AgentDetailVO;
 import com.agentforge.agent.vo.AgentToolVO;
 import com.agentforge.agent.vo.AgentVO;
 import com.agentforge.common.core.PageResult;
 import com.agentforge.common.core.ResultCode;
 import com.agentforge.common.exception.BusinessException;
+import com.agentforge.framework.security.AesGcmCrypto;
 import com.agentforge.workflow.service.WorkflowService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -24,8 +27,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -41,6 +46,8 @@ public class AgentServiceImpl implements AgentService {
     private final AgentMapper agentMapper;
     private final AgentToolMapper agentToolMapper;
     private final WorkflowService workflowService;
+    private final ToolDefinitionService toolDefinitionService;
+    private final AesGcmCrypto aesGcmCrypto;
 
     @Override
     public PageResult<AgentVO> page(long page, long size, String name, Long viewerId) {
@@ -77,7 +84,7 @@ public class AgentServiceImpl implements AgentService {
         agent.setVisibility(normalizeVisibility(request.getVisibility()));
         agent.setCreatorId(creatorId);
         agentMapper.insert(agent);
-        saveTools(agent.getId(), request.getTools());
+        saveTools(agent.getId(), request.getTools(), creatorId, null);
         log.info("创建 Agent: id={}, name={}, creatorId={}", agent.getId(), agent.getName(), creatorId);
         return toDetailVO(agent);
     }
@@ -101,7 +108,7 @@ public class AgentServiceImpl implements AgentService {
         agentMapper.updateById(agent);
 
         // 工具配置整体替换：旧配置逻辑删除后重新插入
-        replaceTools(agentId, request.getTools());
+        replaceTools(agentId, request.getTools(), operatorId);
         log.info("更新 Agent: id={}, operatorId={}", agentId, operatorId);
         return toDetailVO(agent);
     }
@@ -162,25 +169,55 @@ public class AgentServiceImpl implements AgentService {
         workflowService.getOwned(workflowId, operatorId);
     }
 
-    /** 批量插入工具配置 */
-    private void saveTools(Long agentId, List<ToolConfigRequest> tools) {
+    /**
+     * 批量插入工具配置。
+     *
+     * @param oldConfigs 按工具名索引的旧配置（编辑时掩码合并用；创建传 null）
+     */
+    private void saveTools(Long agentId, List<ToolConfigRequest> tools, Long operatorId,
+                           Map<String, Map<String, Object>> oldConfigs) {
         if (tools == null || tools.isEmpty()) {
             return;
         }
+        Set<String> seen = new HashSet<>();
         for (ToolConfigRequest tool : tools) {
+            if (!seen.add(tool.getToolName())) {
+                throw new BusinessException(ResultCode.PARAM_ERROR,
+                        "工具重复绑定: " + tool.getToolName());
+            }
+            boolean custom = "custom".equals(tool.getToolSource());
+            if (custom) {
+                // 自定义工具绑定校验：定义存在且有权限（PRIVATE 仅创建者 / PUBLIC 所有人）
+                if (tool.getToolDefinitionId() == null) {
+                    throw new BusinessException(ResultCode.PARAM_ERROR,
+                            "自定义工具必须指定 toolDefinitionId");
+                }
+                toolDefinitionService.getBindable(tool.getToolDefinitionId(), operatorId);
+            }
             AgentTool entity = new AgentTool();
             entity.setAgentId(agentId);
             entity.setToolName(tool.getToolName());
-            entity.setToolConfig(tool.getToolConfig());
+            entity.setToolSource(custom ? "custom" : "builtin");
+            entity.setToolDefinitionId(custom ? tool.getToolDefinitionId() : null);
+            // 密钥字段：编辑回显掩码合并旧值 → 加密入库
+            Map<String, Object> old = oldConfigs == null ? null : oldConfigs.get(tool.getToolName());
+            Map<String, Object> merged = ToolSecretUtil.mergeSecrets(old, tool.getToolConfig(), aesGcmCrypto);
+            entity.setToolConfig(ToolSecretUtil.encryptSecrets(merged, aesGcmCrypto));
             entity.setEnabled(tool.getEnabled() == null || tool.getEnabled());
             agentToolMapper.insert(entity);
         }
     }
 
-    /** 整体替换工具配置：逻辑删除旧配置 + 插入新配置 */
-    private void replaceTools(Long agentId, List<ToolConfigRequest> tools) {
+    /** 整体替换工具配置：读取旧配置（掩码合并用）→ 逻辑删除旧配置 + 插入新配置 */
+    private void replaceTools(Long agentId, List<ToolConfigRequest> tools, Long operatorId) {
+        Map<String, Map<String, Object>> oldConfigs = agentToolMapper.selectList(
+                        new LambdaQueryWrapper<AgentTool>().eq(AgentTool::getAgentId, agentId))
+                .stream()
+                .collect(Collectors.toMap(AgentTool::getToolName,
+                        t -> t.getToolConfig() == null ? Map.of() : t.getToolConfig(),
+                        (a, b) -> a));
         agentToolMapper.delete(new LambdaQueryWrapper<AgentTool>().eq(AgentTool::getAgentId, agentId));
-        saveTools(agentId, tools);
+        saveTools(agentId, tools, operatorId, oldConfigs);
     }
 
     private AgentVO toVO(Agent agent) {
@@ -207,7 +244,10 @@ public class AgentServiceImpl implements AgentService {
         List<AgentToolVO> toolVOs = tools.stream()
                 .map(t -> AgentToolVO.builder()
                         .toolName(t.getToolName())
-                        .toolConfig(t.getToolConfig() == null ? Map.of() : t.getToolConfig())
+                        .toolSource(t.getToolSource() == null ? "builtin" : t.getToolSource())
+                        .toolDefinitionId(t.getToolDefinitionId())
+                        .toolConfig(ToolSecretUtil.maskSecrets(
+                                t.getToolConfig() == null ? Map.of() : t.getToolConfig()))
                         .enabled(t.getEnabled())
                         .build())
                 .collect(Collectors.toList());

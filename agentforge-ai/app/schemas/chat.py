@@ -25,6 +25,9 @@ class ChatRequest(BaseModel):
     toolConfigs: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
     # M4：模型 Provider（{type, baseUrl, apiKey}；缺省回落环境变量）
     provider: Optional[Dict[str, Any]] = None
+    # M5：自定义工具定义（{name, description, parameters, httpConfig/scriptConfig}，
+    # 由后端从 tool_definition 表加载透传；请求级动态注册）
+    customTools: List[Dict[str, Any]] = Field(default_factory=list)
 
 
 class SourceItem(BaseModel):

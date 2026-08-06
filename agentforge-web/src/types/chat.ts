@@ -24,12 +24,14 @@ export interface ChartPoint {
   signIndex: number
   degree: number
   longitude: number
+  speed?: number
 }
 
 /** 行星数据（M2.5 排盘卡片）：落座 × 落宫 × 逆行 */
 export interface PlanetData extends ChartPoint {
   house: number
   retrograde: boolean
+  speed?: number
 }
 
 /** 宫位数据 */
@@ -46,6 +48,8 @@ export interface AspectData {
   type: string
   typeEn: string
   orb: number
+  angle?: number
+  direction?: 'applying' | 'separating' | 'exact'
 }
 
 /** 格局（由 star_chart 工具判定，LLM 只解读） */
@@ -67,6 +71,8 @@ export interface StarChartData {
     timezone: string
     ephemeris: string
     ayanamsa: string | null
+    orbMode?: string
+    aspectsEnabled?: string[]
     birthDateTime?: string
     utDateTime?: string
   }
@@ -75,6 +81,7 @@ export interface StarChartData {
   descendant: ChartPoint
   imum_coeli: ChartPoint
   planets: Record<string, PlanetData>
+  points?: Record<string, PlanetData>
   houses: Record<string, HouseData>
   aspects: AspectData[]
   patterns: PatternData[]

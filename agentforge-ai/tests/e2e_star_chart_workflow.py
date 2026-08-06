@@ -35,7 +35,7 @@ OUT_DIR.mkdir(exist_ok=True)
 # 报告结构语义断言：实际措辞由 LLM 决定（如宫位写作"2宫"、免责为完整语句）
 REPORT_KEYS = ["上升", "太阳", "月亮", "相位", "宫", "建议"]
 DISCLAIMER_KEYS = ["仅供娱乐", "自我探索", "仅供参考"]
-LEN_MIN, LEN_MAX = 1000, 4000
+LEN_MIN, LEN_MAX = 1200, 3200
 
 
 def new_client(timeout: float = 900.0) -> httpx.Client:

@@ -11,7 +11,9 @@ import { notifyError } from './notify'
 
 const request = axios.create({
   baseURL: import.meta.env.VITE_API_BASE || '/api',
-  timeout: 90000,
+  // 工作流同步运行可能耗时 1-3 分钟（AI 服务读取超时已放宽到 10 分钟），
+  // 全局超时与后端 AGENTFORGE_AI_READ_TIMEOUT_MS=600000 对齐
+  timeout: 600000,
 })
 
 // 请求拦截：注入 JWT

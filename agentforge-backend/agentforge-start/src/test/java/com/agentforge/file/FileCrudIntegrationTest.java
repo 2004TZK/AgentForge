@@ -18,6 +18,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -40,13 +41,33 @@ class FileCrudIntegrationTest extends IntegrationTestBase {
         AiIngestResponse response = new AiIngestResponse();
         response.setStatus("ok");
         response.setChunkCount(3);
-        // doReturn 风格：避免同 mock 先 thenThrow 后 when() 时旧 stub 被触发
+        // 上传/重试走 7 参 ingest 重载（含切片模式与进度回调）；doReturn 风格避免 thenThrow 后旧 stub 被触发
         org.mockito.BDDMockito.doReturn(response)
-                .when(aiServiceClient).ingest(anyLong(), anyString(), anyString());
+                .when(aiServiceClient).ingest(anyLong(), anyString(), anyString(),
+                        any(), any(), anyLong(), anyString());
         AiDeleteResponse delete = new AiDeleteResponse();
         delete.setDeletedCount(3);
         org.mockito.BDDMockito.doReturn(delete)
                 .when(aiServiceClient).deleteFile(anyLong(), anyString());
+    }
+
+    /** 轮询文件列表直至终态（READY/FAILED），规避异步 ingest 的竞态 */
+    private String awaitStatus(String token, long agentId, int maxMs) throws Exception {
+        long deadline = System.currentTimeMillis() + maxMs;
+        while (System.currentTimeMillis() < deadline) {
+            MvcResult result = mockMvc.perform(get("/file/list")
+                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                            .param("agentId", String.valueOf(agentId)))
+                    .andExpect(status().isOk())
+                    .andReturn();
+            String status = objectMapper.readTree(result.getResponse().getContentAsString())
+                    .path("data").path("list").path(0).path("status").asText("");
+            if ("READY".equals(status) || "FAILED".equals(status)) {
+                return status;
+            }
+            Thread.sleep(50);
+        }
+        throw new AssertionError("等待文件状态超时（> " + maxMs + "ms）");
     }
 
     @Test
@@ -65,10 +86,11 @@ class FileCrudIntegrationTest extends IntegrationTestBase {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0))
                 .andExpect(jsonPath("$.data.fileName").value("rag.md"))
-                .andExpect(jsonPath("$.data.status").value("READY"))
                 .andReturn();
         long docId = objectMapper.readTree(uploaded.getResponse().getContentAsString())
                 .path("data").path("id").asLong();
+        // 上传为异步 ingest：轮询至 READY 后再断言列表/删除
+        assertEquals("READY", awaitStatus(token, agentId, 3000));
 
         // 列表
         mockMvc.perform(get("/file/list")
@@ -98,11 +120,12 @@ class FileCrudIntegrationTest extends IntegrationTestBase {
         String token = registerAndLogin("alice");
         long agentId = createAgent(token);
 
-        // 首次 ingest 抛业务异常（模拟 AI 不可用）→ PENDING（仅 BusinessException 触发降级）
+        // 首次 ingest 抛业务异常（模拟 AI 不可用）→ 异步线程将文档标记 FAILED
         org.mockito.BDDMockito.willThrow(
                         new com.agentforge.common.exception.BusinessException(
                                 com.agentforge.common.core.ResultCode.AI_UNAVAILABLE, "AI 不可用"))
-                .given(aiServiceClient).ingest(anyLong(), anyString(), anyString());
+                .given(aiServiceClient).ingest(anyLong(), anyString(), anyString(),
+                        any(), any(), anyLong(), anyString());
         MockMultipartFile file = new MockMultipartFile(
                 "file", "note.txt", "text/plain", "内容".getBytes());
         MvcResult uploaded = mockMvc.perform(multipart("/file/upload")
@@ -110,17 +133,17 @@ class FileCrudIntegrationTest extends IntegrationTestBase {
                         .param("agentId", String.valueOf(agentId))
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("PENDING"))
                 .andReturn();
         long docId = objectMapper.readTree(uploaded.getResponse().getContentAsString())
                 .path("data").path("id").asLong();
+        assertEquals("FAILED", awaitStatus(token, agentId, 3000));
 
-        // 重试成功 → READY
+        // 重试成功 → 异步 ingest → READY
         mockIngest();
         mockMvc.perform(post("/file/{id}/retry", docId)
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("READY"));
+                .andExpect(status().isOk());
+        assertEquals("READY", awaitStatus(token, agentId, 3000));
     }
 
     @Test

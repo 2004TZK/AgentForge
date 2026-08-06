@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS `agent` (
   `name`          VARCHAR(100) NOT NULL,
   `description`   VARCHAR(500),
   `system_prompt` CLOB         NOT NULL,
-  `model_name`    VARCHAR(50)  NOT NULL DEFAULT 'deepseek-chat',
+  `model_name`    VARCHAR(50)  NOT NULL DEFAULT 'qwen3.7-plus',
   `provider_id`   BIGINT,
   `temperature`   DECIMAL(3,2) NOT NULL DEFAULT 0.70,
   `mode`          VARCHAR(20)  NOT NULL DEFAULT 'chat',
@@ -39,16 +39,38 @@ CREATE TABLE IF NOT EXISTS `agent` (
 );
 
 CREATE TABLE IF NOT EXISTS `agent_tool` (
-  `id`           BIGINT       NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  `agent_id`     BIGINT       NOT NULL,
-  `tool_name`    VARCHAR(100) NOT NULL,
-  `tool_config`  JSON,
-  `enabled`      TINYINT      NOT NULL DEFAULT 1,
-  `deleted`      TINYINT      NOT NULL DEFAULT 0,
-  `created_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `id`                 BIGINT       NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `agent_id`           BIGINT       NOT NULL,
+  `tool_name`          VARCHAR(100) NOT NULL,
+  `tool_source`        VARCHAR(16)  NOT NULL DEFAULT 'builtin',
+  `tool_definition_id` BIGINT,
+  `tool_config`        CLOB,
+  `enabled`            TINYINT      NOT NULL DEFAULT 1,
+  `deleted`            TINYINT      NOT NULL DEFAULT 0,
+  `created_time`       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_time`       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT `uk_agent_tool` UNIQUE (`agent_id`, `tool_name`),
   CONSTRAINT `fk_agent_tool_agent` FOREIGN KEY (`agent_id`) REFERENCES `agent` (`id`)
+);
+
+-- M5 用户自定义工具定义（HTTP 工具 / 代码工具）
+-- JSON 列用 CLOB（H2 与 JacksonTypeHandler 兼容约定，同 conversation.sources）
+CREATE TABLE IF NOT EXISTS `tool_definition` (
+  `id`            BIGINT       NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `creator_id`    BIGINT       NOT NULL,
+  `name`          VARCHAR(100) NOT NULL,
+  `display_name`  VARCHAR(100) NOT NULL,
+  `description`   VARCHAR(500),
+  `tool_type`     VARCHAR(20)  NOT NULL,
+  `parameters`    CLOB         NOT NULL,
+  `http_config`   CLOB,
+  `script_config` CLOB,
+  `visibility`    VARCHAR(20)  NOT NULL DEFAULT 'PRIVATE',
+  `deleted`       TINYINT      NOT NULL DEFAULT 0,
+  `created_time`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_time`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT `uk_tool_definition_creator_name` UNIQUE (`creator_id`, `name`),
+  CONSTRAINT `fk_tool_definition_creator` FOREIGN KEY (`creator_id`) REFERENCES `user` (`id`)
 );
 
 -- M4 多模型配置：模型 Provider 表（models 用 CLOB 存 JSON，与 conversation.sources 约定一致）
@@ -71,15 +93,20 @@ INSERT INTO `model_provider` (`name`, `provider_type`, `base_url`, `models`, `cr
 SELECT '千问云端', 'openai', 'https://dashscope.aliyuncs.com/compatible-mode/v1', '["qwen3.7-plus","text-embedding-v3"]', 0
 WHERE NOT EXISTS (SELECT 1 FROM `model_provider` WHERE `creator_id` = 0);
 CREATE TABLE IF NOT EXISTS `document` (
-  `id`           BIGINT       NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  `agent_id`     BIGINT       NOT NULL,
-  `file_name`    VARCHAR(255) NOT NULL,
-  `file_path`    VARCHAR(500) NOT NULL,
-  `file_type`    VARCHAR(50)  NOT NULL,
-  `status`       VARCHAR(20)  NOT NULL DEFAULT 'PENDING',
-  `deleted`      TINYINT      NOT NULL DEFAULT 0,
-  `created_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
+  `id`              BIGINT       NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `agent_id`        BIGINT       NOT NULL,
+  `file_name`       VARCHAR(255) NOT NULL,
+  `file_path`       VARCHAR(500) NOT NULL,
+  `file_type`       VARCHAR(50)  NOT NULL,
+  `status`          VARCHAR(20)  NOT NULL DEFAULT 'PENDING',
+  `chunk_count`     INT          NOT NULL DEFAULT 0,
+  `slicing_mode`    VARCHAR(16)  NOT NULL DEFAULT 'auto',
+  `slicing_config`  CLOB,
+  `processed_chunks` INT         NOT NULL DEFAULT 0,
+  `total_chunks`    INT          NOT NULL DEFAULT 0,
+  `deleted`         TINYINT      NOT NULL DEFAULT 0,
+  `created_time`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_time`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS `session` (

@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     llm_local: bool = False                  # 默认远端模型（False）；自建 Ollama 可置 True 走原生 /api/chat
     llm_model: str = "qwen3.7-plus"
     llm_think: bool = False                  # 仅本地推理模型（如 qwen3.5）使用；远端模型忽略
+    llm_remote_disable_thinking: bool = True  # 远端 qwen3 系列（DashScope）默认产出 reasoning_content，
+    # 拖慢首 token 与工具决策；置 True 时对 DashScope 兼容接口传 enable_thinking=false 提速
     llm_timeout_seconds: int = 120           # 云端推理较快，超时收敛到 2 分钟
     sse_ping_interval_seconds: int = 10      # SSE 无事件超过该间隔时发送保活注释帧
 
@@ -32,6 +34,9 @@ class Settings(BaseSettings):
     qdrant_host: str = "localhost"
     qdrant_port: int = 6333
     rag_top_k: int = 4
+    # 星盘类回答硬上限（字）：绑定 star_chart 工具的智能体完整解读 ≤ 该值，
+    # 超出按句子边界截断（提示词约束模型不可靠，服务层兜底保证字数上限）
+    llm_answer_max_chars: int = 3000
 
     # ---- Redis（短期记忆） ----
     redis_host: str = "localhost"
@@ -55,6 +60,18 @@ class Settings(BaseSettings):
 
     # ---- 共享文件卷 ----
     upload_dir: str = "/data/uploads"
+
+    # ---- 自定义工具（工具定义开发文档 v3.0 §6/§7） ----
+    # HTTP 工具执行器
+    http_tool_timeout_seconds: int = 15        # 单次请求超时（默认 15s）
+    http_tool_max_response_bytes: int = 1_048_576  # 响应体大小上限（1MB）
+    http_tool_ssrf_enabled: bool = True        # SSRF 防护开关（内网/保留地址段拒绝）
+    http_tool_max_chars: int = 4000            # 回填 LLM 的结果文本截断长度
+    # 代码工具 + sandbox 沙箱执行器
+    sandbox_base_url: str = "http://sandbox:8700"  # 沙箱服务内部地址（compose network_mode: none）
+    sandbox_internal_token: str = "dev-sandbox-token"
+    script_tool_max_source_chars: int = 51_200  # 代码大小上限（50KB，与后端双重校验）
+    script_tool_max_stdout_chars: int = 4000   # stdout 回填截断
 
     model_config = {
         "env_file": str(_ENV_FILE) if _ENV_FILE.exists() else None,

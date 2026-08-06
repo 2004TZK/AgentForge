@@ -83,7 +83,7 @@ class TestErrors:
         with pytest.raises(ValueError, match="宫位制"):
             _calc(birth_date="1994-05-20", birth_time="14:30",
                   latitude=39.9, longitude=116.4, timezone="Asia/Shanghai",
-                  house_system="equal")
+                  house_system="not_a_system")
 
 
 class TestHighLatitudeFallback:
@@ -119,7 +119,11 @@ class TestOutputStructure:
         for a in result["aspects"]:
             assert {"p1", "p2", "type", "typeEn", "orb"} <= set(a)
         for pat in result["patterns"]:
-            assert pat["type"] in ("大三角", "T三角", "大十字", "星群")
+            assert pat["type"] in (
+                "大三角", "T三角", "大十字", "星群", "风筝", "神秘长方形",
+                "上帝之指", "摇篮", "大六分相", "双Yod",
+                "束型", "碗型", "桶型", "火车头型", "跷跷板型", "撒型", "扇型",
+            )
 
     def test_whole_sign_requested(self):
         result = _calc(birth_date="1994-05-20", birth_time="14:30",

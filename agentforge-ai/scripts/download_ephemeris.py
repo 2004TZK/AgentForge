@@ -4,7 +4,8 @@
 从 GitHub 官方仓库 (aloistr/swisseph) 下载覆盖 1800-2399 的精简版历书：
 - sepl_18.se1: 行星历书（太阳至冥王星），~484KB
 - semo_18.se1: 月亮历书，~1.3MB
-总计 ~1.8MB
+- seas_18.se1: 小行星/凯龙星历书（chiron/ceres/pallas/juno/vesta），~223KB
+总计 ~2MB
 
 用法：
   python scripts/download_ephemeris.py [--output-dir PATH]
@@ -21,6 +22,7 @@ BASE_URL = "https://raw.githubusercontent.com/aloistr/swisseph/master/ephe"
 FILES = {
     "sepl_18.se1": "行星历书（太阳至冥王星，1800-2399）",
     "semo_18.se1": "月亮历书（1800-2399）",
+    "seas_18.se1": "小行星/凯龙星历书（1800-2399，凯龙/谷神/智神/婚神/灶神）",
 }
 
 
@@ -54,7 +56,7 @@ def main() -> int:
             size = download(url, dest)
             total += size
             print(f"OK ({size:,} bytes)")
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - 下载失败给出可读提示
             print(f"FAILED: {exc}")
             return 1
 
@@ -64,7 +66,7 @@ def main() -> int:
         print(f"  提示: 请确保 {copyright_file.name} 版权声明文件存在")
 
     print(f"\n完成！总计 {total:,} bytes ({total / 1024 / 1024:.1f} MB)")
-    print(f"文件覆盖范围: 1800-2399 年")
+    print("文件覆盖范围: 1800-2399 年")
     return 0
 
 

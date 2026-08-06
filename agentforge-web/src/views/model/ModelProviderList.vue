@@ -169,7 +169,7 @@ onMounted(load)
         </div>
         <div class="form-item">
           <label>可用模型（逗号分隔）</label>
-          <input v-model="modelsText" class="input" placeholder="qwen3.5:0.8b, bge-m3" />
+          <input v-model="modelsText" class="input" placeholder="qwen3.7-plus, qwen3.7-flash" />
         </div>
         <div class="form-item">
           <label class="mode-option">
@@ -238,7 +238,7 @@ onMounted(load)
           </tbody>
         </table>
         <p class="muted small-tip">
-          内置 Provider 由系统维护（本机 Ollama）；自定义 Provider 支持接入任意 OpenAI 兼容服务。
+           内置 Provider 由系统维护（千问云端）；自定义 Provider 支持接入任意 OpenAI 兼容服务。
         </p>
       </div>
     </div>

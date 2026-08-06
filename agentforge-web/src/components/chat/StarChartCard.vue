@@ -6,8 +6,9 @@
  */
 import type { StarChartData } from '../../types/chat'
 import ZodiacWheel from './ZodiacWheel.vue'
+import { chartToMarkdown, markdownToHtml } from '../../utils/starReport'
 
-defineProps<{ chart: StarChartData }>()
+const props = defineProps<{ chart: StarChartData }>()
 
 /** 行星英文键 → 中文名 */
 const PLANET_ZH: Record<string, string> = {
@@ -30,6 +31,31 @@ const ASPECT_SHORT: Record<string, string> = {
   trine: '拱',
   square: '刑',
   sextile: '六合',
+  semi_sextile: '半六合',
+  semi_square: '半刑',
+  quintile: '五分',
+  sesquiquadrate: '补八分',
+  biquintile: '倍五分',
+  quincunx: '梅花',
+}
+
+const HOUSE_SYSTEM_ZH: Record<string, string> = {
+  placidus: 'Placidus',
+  whole_sign: '整宫制',
+  equal: '等宫制',
+  koch: 'Koch',
+  regiomontanus: 'Regiomontanus',
+  campanus: 'Campanus',
+  porphyry: 'Porphyry',
+  topocentric: 'Topocentric',
+  alcabitius: 'Alcabitius',
+  morinus: 'Morinus',
+}
+
+const POINT_ZH: Record<string, string> = {
+  north_node: '北交点', south_node: '南交点', true_node: '真北交点', true_south_node: '真南交点',
+  lilith: '莉莉丝', true_lilith: '真莉莉丝', part_of_fortune: '福点', vertex: '宿命点',
+  chiron: '凯龙星', ceres: '谷神星', pallas: '智神星', juno: '婚神星', vesta: '灶神星',
 }
 
 const PLANET_ORDER = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto']
@@ -41,6 +67,43 @@ function planetName(key: string): string {
 function formatDegree(degree: number): string {
   return degree.toFixed(1).replace(/\.0$/, '')
 }
+
+/** 导出 Markdown：Blob 下载（V2 报告导出）。 */
+function exportMarkdown(): void {
+  const md = chartToMarkdown(props.chart)
+  const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `星盘分析报告-${new Date().toISOString().slice(0, 10)}.md`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}
+
+/** 打印 / PDF：新窗口渲染报告后调用浏览器打印（可另存为 PDF）。 */
+function exportPdf(): void {
+  const win = window.open('', '_blank', 'noopener')
+  if (!win) return
+  win.document.write(`<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+    <title>星盘分析报告</title>
+    <style>
+      body { font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif; color: #221d15;
+             max-width: 760px; margin: 32px auto; padding: 0 20px; line-height: 1.7; }
+      h1 { font-size: 22px; border-bottom: 2px solid #d8cfbc; padding-bottom: 8px; }
+      h2 { font-size: 17px; margin-top: 26px; color: #17130c; }
+      h3 { font-size: 14px; margin-top: 18px; }
+      table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 13px; }
+      th, td { border: 1px solid #ddd5c4; padding: 5px 8px; text-align: left; }
+      th { background: #f4f0e8; font-weight: 600; }
+      li { margin: 2px 0; }
+      p { margin: 6px 0; }
+    </style></head><body>${markdownToHtml(chartToMarkdown(chart))}
+    <script>window.onload = () => { window.focus(); window.print(); }</scr` + `ipt>
+    </body></html>`)
+  win.document.close()
+}
 </script>
 
 <template>
@@ -49,9 +112,13 @@ function formatDegree(degree: number): string {
       <span class="chart-title">本命盘排盘</span>
       <span class="chart-meta mono">
         {{ chart.meta.zodiac === 'sidereal' ? '恒星黄道' : '回归黄道' }}<template v-if="chart.meta.ayanamsa">（{{ chart.meta.ayanamsa }}）</template>
-        {{ chart.meta.houseSystem === 'whole_sign' ? ' · 整宫制' : ' · Placidus' }}
+        · {{ HOUSE_SYSTEM_ZH[chart.meta.houseSystem] ?? chart.meta.houseSystem }}
         · {{ chart.meta.timezone }}
         <span v-if="chart.meta.houseSystemFallback" class="chart-fallback" title="高纬度 Placidus 计算失败，已自动降级整宫制">降级</span>
+      </span>
+      <span class="chart-actions">
+        <button class="chart-action" type="button" @click="exportMarkdown" title="导出 Markdown 报告">导出 MD</button>
+        <button class="chart-action" type="button" @click="exportPdf" title="打印 / 另存为 PDF">打印/PDF</button>
       </span>
     </div>
 
@@ -82,6 +149,19 @@ function formatDegree(degree: number): string {
       </tbody>
     </table>
 
+    <!-- 虚点 -->
+    <div v-if="chart.points && Object.keys(chart.points).length" class="chart-section">
+      <div class="chart-section-title">虚点 / 小行星</div>
+      <div class="point-list">
+        <span v-for="(p, key) in chart.points" :key="key" class="point-chip">
+          <span class="cell-name">{{ POINT_ZH[key] ?? key }}</span>
+          <span>{{ p.sign }} {{ formatDegree(p.degree) }}°</span>
+          <span class="point-house mono">第{{ p.house }}宫</span>
+          <span v-if="p.retrograde" class="cell-retro mono">℞</span>
+        </span>
+      </div>
+    </div>
+
     <!-- 相位 -->
     <div v-if="chart.aspects.length" class="chart-section">
       <div class="chart-section-title">相位（{{ chart.aspects.length }}）</div>
@@ -91,6 +171,7 @@ function formatDegree(degree: number): string {
           <span class="aspect-mark mono">{{ ASPECT_SHORT[a.typeEn] ?? a.type }}</span>
           <span class="mono">{{ planetName(a.p2) }}</span>
           <span class="aspect-orb mono">{{ a.orb }}°</span>
+          <span v-if="a.direction" class="aspect-orb mono">{{ a.direction === 'applying' ? '入相' : a.direction === 'separating' ? '出相' : '正相位' }}</span>
         </span>
       </div>
     </div>
@@ -103,7 +184,10 @@ function formatDegree(degree: number): string {
           {{ p.type }}
           <template v-if="p.type === '星群' && p.scope === 'house'">· {{ p.house }}宫</template>
           <template v-else-if="p.type === '星群' && p.scope === 'sign'">· {{ p.sign }}</template>
-          <template v-else-if="p.type === 'T三角' && p.apex">· 顶点 {{ planetName(p.apex) }}</template>
+          <template v-else-if="p.apex">· 顶点 {{ planetName(p.apex) }}</template>
+          <template v-else-if="p.type === '桶型' && p.handle">· 把手 {{ planetName(p.handle) }}</template>
+          <template v-else-if="p.type === '火车头型' && p.leading">· 火车头 {{ planetName(p.leading) }}</template>
+          <template v-else-if="p.type === '碗型' && p.rim">· 边缘星 {{ planetName(p.rim) }}</template>
           <span class="pattern-planets mono">{{ p.planets.map(planetName).join(' / ') }}</span>
         </span>
       </div>
@@ -150,6 +234,24 @@ function formatDegree(degree: number): string {
 .chart-meta {
   font-size: 11px;
   color: var(--steel, #6f6a5b);
+}
+.chart-actions {
+  display: inline-flex;
+  gap: 6px;
+  margin-left: auto;
+}
+.chart-action {
+  font-size: 11px;
+  padding: 2px 8px;
+  border: 1px solid var(--line, #e1dacb);
+  border-radius: var(--radius-sm, 6px);
+  background: var(--paper, #f4f0e8);
+  color: var(--steel, #6f6a5b);
+  cursor: pointer;
+}
+.chart-action:hover {
+  color: var(--ink-deep, #17130c);
+  border-color: var(--steel, #6f6a5b);
 }
 .chart-fallback {
   color: var(--warn, #92600a);
@@ -209,7 +311,8 @@ function formatDegree(degree: number): string {
   margin-bottom: 5px;
 }
 .aspect-list,
-.pattern-list {
+.pattern-list,
+.point-list {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
@@ -229,6 +332,18 @@ function formatDegree(degree: number): string {
 .aspect-orb {
   color: var(--steel, #6f6a5b);
   font-size: 11px;
+}
+.point-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border: 1px solid var(--line, #e1dacb);
+  border-radius: var(--radius-sm, 6px);
+  font-size: 11px;
+}
+.point-house {
+  color: var(--steel, #6f6a5b);
 }
 .pattern-chip {
   padding: 2px 7px;

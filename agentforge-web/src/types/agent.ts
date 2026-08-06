@@ -12,6 +12,10 @@ export interface ToolMeta {
 
 export interface AgentTool {
   toolName: string
+  /** M5：工具来源 builtin=内置 / custom=我的自定义工具 */
+  toolSource?: 'builtin' | 'custom'
+  /** M5：自定义工具定义 ID（toolSource=custom 时） */
+  toolDefinitionId?: number | null
   toolConfig: Record<string, unknown>
   enabled: boolean
 }
@@ -46,7 +50,13 @@ export interface AgentPayload {
   systemPrompt: string
   modelName: string
   temperature: number
-  tools: { toolName: string; toolConfig: Record<string, unknown>; enabled: boolean }[]
+  tools: {
+    toolName: string
+    toolSource?: 'builtin' | 'custom'
+    toolDefinitionId?: number | null
+    toolConfig: Record<string, unknown>
+    enabled: boolean
+  }[]
   mode?: string
   workflowId?: number | null
   visibility?: string

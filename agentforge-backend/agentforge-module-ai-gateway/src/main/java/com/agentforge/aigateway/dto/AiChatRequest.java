@@ -50,4 +50,9 @@ public class AiChatRequest {
     /** 智能体工具配置 {tool_name: config}（M3：工具执行时透传） */
     @Builder.Default
     private Map<String, Map<String, Object>> toolConfigs = new HashMap<>();
+
+    /** 自定义工具定义（M5：{name, description, parameters, httpConfig/scriptConfig}，
+     * 由后端从 tool_definition 表加载（密钥已解密）透传，AI 服务请求级动态注册） */
+    @Builder.Default
+    private List<Map<String, Object>> customTools = new ArrayList<>();
 }

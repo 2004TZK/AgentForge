@@ -5,11 +5,13 @@ import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '../../components/layout/AppLayout.vue'
 import { apiAgentDetail, apiToolsMeta } from '../../api/agent'
 import { apiProviderList } from '../../api/provider'
+import { apiToolDefinitionPage } from '../../api/toolDefinition'
 import { apiWorkflowPage } from '../../api/workflow'
 import { useAgentStore } from '../../stores/agent'
 import { notifyError, notifySuccess } from '../../utils/notify'
 import type { AgentPayload, AgentTool, ToolMeta } from '../../types/agent'
 import type { Provider } from '../../types/provider'
+import type { ToolDefinition } from '../../types/toolDefinition'
 import type { Workflow } from '../../types/workflow'
 
 const route = useRoute()
@@ -22,7 +24,7 @@ const agentId = computed(() => Number(route.params.id))
 const name = ref('')
 const description = ref('')
 const systemPrompt = ref('')
-const modelName = ref('deepseek-chat')
+const modelName = ref('qwen3.7-plus')
 const temperature = ref(0.7)
 /** M3 运行模式：chat 对话（LLM 工具循环） / workflow 工作流（消息作为 {message} 输入） */
 const mode = ref<'chat' | 'workflow'>('chat')
@@ -32,6 +34,8 @@ const workflowId = ref<number | null>(null)
 const workflows = ref<Workflow[]>([])
 const tools = ref<AgentTool[]>([{ toolName: 'calculator', toolConfig: {}, enabled: true }])
 const toolMeta = ref<ToolMeta[]>([])
+/** M5 我的自定义工具（/tool-definitions 分页加载） */
+const customTools = ref<ToolDefinition[]>([])
 /** M4 模型 Provider：provider 下拉 + 可用模型联动 */
 const providers = ref<Provider[]>([])
 const providerId = ref<number | null>(null)
@@ -53,6 +57,11 @@ function metaOf(toolName: string): ToolMeta | undefined {
   return toolMeta.value.find((t) => t.name === toolName)
 }
 
+/** M5 自定义工具元信息（来源工具库定义） */
+function customToolMeta(toolName: string): ToolDefinition | undefined {
+  return customTools.value.find((c) => c.name === toolName)
+}
+
 function configParamOf(toolName: string): string[] {
   return Object.keys(metaOf(toolName)?.config ?? {})
 }
@@ -68,13 +77,35 @@ function onToolChange(tool: AgentTool, newName: string): void {
   tool.toolName = newName
 }
 
+/** M5 来源切换：builtin ↔ custom 时重置工具名与配置（不同来源 Schema 不同） */
+function onToolSourceChange(tool: AgentTool, newSource: 'builtin' | 'custom'): void {
+  if (newSource === (tool.toolSource ?? 'builtin')) return
+  tool.toolSource = newSource
+  tool.toolDefinitionId = newSource === 'custom' ? (customTools.value[0]?.id ?? null) : null
+  const first =
+    newSource === 'custom'
+      ? (customTools.value[0]?.name ?? '')
+      : (toolOptions.value[0] ?? 'calculator')
+  tool.toolName = first
+  tool.toolConfig = {}
+}
+
+/** M5 自定义工具选择：记录 definitionId 并按名称回填（custom 工具 config 为空对象） */
+function onCustomToolChange(tool: AgentTool, newName: string): void {
+  if (newName === tool.toolName) return
+  tool.toolName = newName
+  tool.toolConfig = {}
+  const def = customTools.value.find((c) => c.name === newName)
+  tool.toolDefinitionId = def?.id ?? null
+}
+
 function addTool(): void {
   const first = toolOptions.value[0] ?? 'calculator'
   const defaults: Record<string, unknown> = {}
   for (const param of configParamOf(first)) {
     defaults[param] = ''
   }
-  tools.value.push({ toolName: first, toolConfig: defaults, enabled: true })
+  tools.value.push({ toolName: first, toolSource: 'builtin', toolConfig: defaults, enabled: true })
 }
 
 function removeTool(index: number): void {
@@ -124,6 +155,13 @@ onMounted(async () => {
   } catch {
     /* Provider 列表不可用时回落默认模型 */
   }
+  // M5 加载我的自定义工具（Agent 绑定选择器；失败不阻断）
+  try {
+    const result = await apiToolDefinitionPage({ page: 1, size: 100 })
+    customTools.value = result.list
+  } catch {
+    /* 自定义工具不可用时不展示选择器 */
+  }
   await loadDetail()
 })
 
@@ -140,11 +178,13 @@ async function onSubmit(): Promise<void> {
     name: name.value.trim(),
     description: description.value.trim() || undefined,
     systemPrompt: systemPrompt.value,
-    modelName: modelName.value || 'deepseek-chat',
+    modelName: modelName.value || 'qwen3.7-plus',
     providerId: providerId.value,
     temperature: Number(temperature.value) || 0.7,
     tools: tools.value.map((t) => ({
       toolName: t.toolName,
+      toolSource: t.toolSource ?? 'builtin',
+      toolDefinitionId: t.toolSource === 'custom' ? (t.toolDefinitionId ?? null) : null,
       toolConfig: t.toolConfig || {},
       enabled: t.enabled !== false,
     })),
@@ -201,7 +241,7 @@ async function onSubmit(): Promise<void> {
           <div class="form-item">
             <label>模型 Provider</label>
             <select v-model="providerId" class="select">
-              <option :value="null">内置 Ollama（本机）</option>
+              <option :value="null">内置千问云端（默认）</option>
               <option v-for="p in providers" :key="p.id" :value="p.id">
                 {{ p.name }}（{{ p.providerType }}）
               </option>
@@ -213,7 +253,7 @@ async function onSubmit(): Promise<void> {
               v-if="!providerModels.length"
               v-model="modelName"
               class="input mono"
-              placeholder="qwen3.5:0.8b"
+              placeholder="qwen3.7-plus"
             />
             <select v-else v-model="modelName" class="select">
               <option v-for="m in providerModels" :key="m" :value="m">{{ m }}</option>
@@ -286,20 +326,45 @@ async function onSubmit(): Promise<void> {
 
         <div class="section-label">
           <span class="section-key">TOOLS</span>工具配置
-          <span class="section-hint">LLM 依据 Schema 自主调用；工作流模式下忽略</span>
+          <span class="section-hint">内置工具 + 我的自定义工具；LLM 依据 Schema 自主调用；工作流模式下忽略</span>
         </div>
 
         <div class="form-item">
           <div v-for="(tool, index) in tools" :key="index" class="tool-card">
             <div class="tool-row">
               <select
+                class="select tool-source"
+                :value="tool.toolSource ?? 'builtin'"
+                @change="onToolSourceChange(tool, ($event.target as HTMLSelectElement).value as 'builtin' | 'custom')"
+              >
+                <option value="builtin">内置工具</option>
+                <option value="custom">我的自定义</option>
+              </select>
+              <select
+                v-if="(tool.toolSource ?? 'builtin') === 'custom'"
+                class="select tool-name"
+                :value="tool.toolName"
+                @change="onCustomToolChange(tool, ($event.target as HTMLSelectElement).value)"
+              >
+                <option v-for="ct in customTools" :key="ct.id" :value="ct.name">
+                  {{ ct.displayName }}（{{ ct.name }}）
+                </option>
+              </select>
+              <select
+                v-else
                 class="select tool-name"
                 :value="tool.toolName"
                 @change="onToolChange(tool, ($event.target as HTMLSelectElement).value)"
               >
                 <option v-for="opt in toolOptions" :key="opt" :value="opt">{{ opt }}</option>
               </select>
-              <span v-if="metaOf(tool.toolName)?.description" class="tool-desc muted">
+              <span
+                v-if="(tool.toolSource ?? 'builtin') === 'custom'"
+                class="tool-desc muted"
+              >
+                {{ customToolMeta(tool.toolName)?.description || '自定义工具（定义见工具库）' }}
+              </span>
+              <span v-else-if="metaOf(tool.toolName)?.description" class="tool-desc muted">
                 {{ metaOf(tool.toolName)?.description }}
               </span>
               <label class="tool-enabled">
@@ -308,7 +373,10 @@ async function onSubmit(): Promise<void> {
               </label>
               <button class="btn btn-danger btn-sm" @click="removeTool(index)">移除</button>
             </div>
-            <div v-if="configParamOf(tool.toolName).length" class="tool-config">
+            <div
+              v-if="(tool.toolSource ?? 'builtin') === 'builtin' && configParamOf(tool.toolName).length"
+              class="tool-config"
+            >
               <div v-for="param in configParamOf(tool.toolName)" :key="param" class="form-item">
                 <label class="tool-config-label">
                   {{ param }}
@@ -324,6 +392,12 @@ async function onSubmit(): Promise<void> {
                 />
               </div>
             </div>
+            <p
+              v-if="(tool.toolSource ?? 'builtin') === 'custom' && !customTools.length"
+              class="muted small-tip"
+            >
+              暂无自定义工具，请先到「工具库」创建
+            </p>
           </div>
           <button class="btn btn-secondary btn-sm" @click="addTool">+ 添加工具</button>
         </div>
@@ -362,6 +436,10 @@ async function onSubmit(): Promise<void> {
 
 .tool-name {
   width: 160px;
+}
+
+.tool-source {
+  width: 120px;
 }
 
 .tool-desc {

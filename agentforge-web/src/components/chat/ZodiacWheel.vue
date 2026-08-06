@@ -25,6 +25,12 @@ const PLANET_ZH: Record<string, string> = {
 }
 const PLANET_ORDER = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto']
 
+const POINT_ZH: Record<string, string> = {
+  north_node: '北交', south_node: '南交', true_node: '真北交', true_south_node: '真南交',
+  lilith: '莉莉丝', true_lilith: '真莉莉丝', part_of_fortune: '福点', vertex: '宿命点',
+  chiron: '凯龙', ceres: '谷神', pallas: '智神', juno: '婚神', vesta: '灶神',
+}
+
 /** 相位类型 → 连线颜色（手册约定） */
 const ASPECT_COLOR: Record<string, string> = {
   conjunction: '#d9b64e', // 合：白/黄
@@ -32,9 +38,17 @@ const ASPECT_COLOR: Record<string, string> = {
   sextile: '#4a6fa5', // 六合：蓝
   square: '#c0392b', // 刑：红
   opposition: '#8e44ad', // 冲：紫红
+  semi_sextile: '#6f9c8f', // 半六合：浅绿
+  semi_square: '#e08a3c', // 半刑：橙
+  quintile: '#7a6fb5', // 五分相：紫
+  sesquiquadrate: '#c95d63', // 补八分相：粉红
+  biquintile: '#5f7fb5', // 倍五分相：蓝紫
+  quincunx: '#8a8a5a', // 梅花相：橄榄
 }
 const ASPECT_SHORT: Record<string, string> = {
   conjunction: '合', opposition: '冲', trine: '拱', square: '刑', sextile: '六合',
+  semi_sextile: '半六合', semi_square: '半刑', quintile: '五分',
+  sesquiquadrate: '补八分', biquintile: '倍五分', quincunx: '梅花',
 }
 
 /** 黄道经度 → 屏幕坐标（longitude 0°=白羊头在顶部，逆时针递增） */
@@ -97,6 +111,16 @@ const planetPoints = computed(() =>
     planet: { sign: string; degree: number; house: number; retrograde: boolean }
   }>,
 )
+
+/** 虚点点位（小圆圈，灰色描边） */
+const pointPoints = computed(() => {
+  const pts = props.chart.points
+  if (!pts) return []
+  return Object.entries(pts).map(([key, p]) => {
+    const pos = pt(p.longitude, R_PLANET)
+    return { key, zh: POINT_ZH[key] ?? key, pos, point: p }
+  })
+})
 
 /** 四轴标记（ASC 左、MC 顶按 longitude 定位，标注在圈外） */
 const axes = computed(() => {
@@ -164,6 +188,12 @@ const aspectLines = computed(() => {
         {{ p.zh }}<tspan class="planet-retro">{{ p.planet.retrograde ? '℞' : '' }}</tspan>
       </text>
       <title>{{ `${p.zh} ${p.planet.sign} ${p.planet.degree.toFixed(1)}° · 第${p.planet.house}宫${p.planet.retrograde ? ' · 逆行' : ''}` }}</title>
+    </g>
+    <!-- 虚点 -->
+    <g v-for="p in pointPoints" :key="`pt-${p.key}`" class="planet point">
+      <circle :cx="p.pos.x" :cy="p.pos.y" r="3" fill="var(--paper, #f4f0e8)" stroke="var(--steel, #6f6a5b)" stroke-width="1.2" />
+      <text class="planet-label point-label" :x="p.pos.x" :y="p.pos.y - 8" text-anchor="middle">{{ p.zh }}</text>
+      <title>{{ `${p.zh} ${p.point.sign} ${p.point.degree.toFixed(1)}° · 第${p.point.house}宫` }}</title>
     </g>
     <!-- 四轴 -->
     <g v-for="a in axes" :key="`ax-${a.key}`" class="axis">
@@ -235,6 +265,12 @@ const aspectLines = computed(() => {
   font-size: 8px;
   fill: var(--ink, #221d15);
   font-weight: 500;
+  pointer-events: none;
+}
+.point-label {
+  font-size: 7px;
+  fill: var(--steel, #6f6a5b);
+  font-weight: 400;
   pointer-events: none;
 }
 .planet-retro {
